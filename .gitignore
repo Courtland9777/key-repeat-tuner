@@ -1,0 +1,144 @@
+
+# Build artifacts
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs
+logs/
+*.log
+
+# Visual Studio Code settings
+.vscode/
+
+# Dotnet tools
+.dotnet/
+
+# Packages
+*.nupkg
+*.snupkg
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# App settings (leave appsettings.json but ignore environment-specific ones)
+appsettings.*.json
+
+# Serilog log files
+logs/*.log
+logs/**/*.log
+
+# Miscellaneous
+*.DS_Store
+Thumbs.db
+
+# Visual Studio 2022 Specific
+.vs/
+*.VC.db
+*.opendb
+*.VC.opendb
+*.cache/
+*.tlog
+*.ilk
+*.pdb
+
+# Rider/JetBrains IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Windows File System Junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS File System Junk
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux File System Junk
+.nfs*
+
+# NuGet Packages
+**/packages/
+**/project.lock.json
+**/project.assets.json
+
+# Resharper
+_ReSharper.Caches/
+*.DotSettings.user
+
+# Entity Framework Migrations
+Migrations/
+
+# .NET Coverage Reports & Testing
+coverage/
+TestResults/
+*.coverage
+*.coveragexml
+*.testlog
+*.trx
+
+# NCrunch
+_NCrunch_*
+.NCrunchTemp/
+
+# Azure, AWS, and Cloud
+app.publish/
+**/*.Publish.xml
+azure-pipelines.yml
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Localhost Development (HTTPS)
+localhost.pfx
+secrets.json
+
+# SonarQube
+.sonarqube/
+
+# Python Virtual Environments (if using Python tools)
+venv/
+.env
+
+# Temporary File Extensions
+*.bak
+*.swp
+*.tmp
+*.log
+
+# Lock Files
+.lock
+
+# Custom Logs & Debugging
+logs/
+*.log
+logs/**/*.log
+
+# Web-related (if using Blazor or Razor)
+wwwroot/
+node_modules/
+bower_components/
+*.bundle.js
+*.min.js
+*.map
+*.gz
+yarn.lock
+package-lock.json
+dist/
+
+# Docker
+docker-compose.override.yml
+**/Dockerfile
+**/.dockerignore
