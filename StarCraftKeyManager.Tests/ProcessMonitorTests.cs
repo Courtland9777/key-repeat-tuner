@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using StarCraftKeyManager;
 using StarCraftKeyManager.Models;
 using Xunit;
 using Moq;
+using StarCraftKeyManager.Services;
 
 namespace StarCraftKeyManager.Tests;
 

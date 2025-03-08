@@ -1,8 +1,9 @@
 using Serilog;
-using StarCraftKeyManager;
 using StarCraftKeyManager.Models;
+using StarCraftKeyManager.Services;
 using StarCraftKeyManager.Validators;
 using System.Security.Principal;
+using StarCraftKeyManager.Interfaces;
 
 if (!IsRunningAsAdmin())
 {
@@ -45,7 +46,7 @@ using var host = Host.CreateDefaultBuilder()
 
         // Register configuration and services
         services.Configure<AppSettings>(configuration);
-        services.AddSingleton<ProcessMonitorService>();
+        services.AddSingleton<IProcessMonitorService, ProcessMonitorService>();
         services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
     })
     .Build();

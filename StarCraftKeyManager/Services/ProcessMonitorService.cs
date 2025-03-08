@@ -4,10 +4,11 @@ using StarCraftKeyManager.Models;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
+using StarCraftKeyManager.Interfaces;
 
-namespace StarCraftKeyManager;
+namespace StarCraftKeyManager.Services;
 
-internal class ProcessMonitorService : BackgroundService
+internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 {
     private readonly ILogger<ProcessMonitorService> _logger;
     private string _processName;
