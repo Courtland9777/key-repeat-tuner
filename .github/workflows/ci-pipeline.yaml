@@ -3,11 +3,11 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - master
+      - master  
       - develop
   pull_request:
     branches:
-      - master  
+      - master
       - develop
   workflow_dispatch:  
 
@@ -24,16 +24,24 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    - name: Cache NuGet packages  
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          nuget-${{ runner.os }}-
+
     - name: Restore Dependencies
       run: dotnet restore
 
     - name: Build Project
       run: dotnet build --configuration Release --no-restore
 
-    - name: Run Tests with Admin Privileges
+    - name: Run Tests with Admin Privileges and Parallel Execution  
       shell: pwsh
       run: |
-        Start-Process -FilePath "dotnet" -ArgumentList "test --configuration Release --no-build --verbosity normal" -Verb RunAs -Wait
+        Start-Process -FilePath "dotnet" -ArgumentList "test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout 60s" -Verb RunAs -Wait
 
     - name: Upload Test Logs on Failure
       if: failure()
