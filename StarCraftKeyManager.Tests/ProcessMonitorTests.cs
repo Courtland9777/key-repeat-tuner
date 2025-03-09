@@ -1,9 +1,8 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Models;
-using Xunit;
 using Moq;
+using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 
 namespace StarCraftKeyManager.Tests;
@@ -51,7 +50,9 @@ public class ProcessMonitorTests
         await task;
 
         // Validate that logs contain process start and stop events
-        _mockLogger.Verify(log => log.LogInformation("Applying Key Repeat Settings: RepeatSpeed=20, RepeatDelay=500"), Times.AtLeastOnce());
-        _mockLogger.Verify(log => log.LogInformation("Applying Key Repeat Settings: RepeatSpeed=31, RepeatDelay=1000"), Times.AtLeastOnce());
+        _mockLogger.Verify(log => log.LogInformation("Applying Key Repeat Settings: RepeatSpeed=20, RepeatDelay=500"),
+            Times.AtLeastOnce());
+        _mockLogger.Verify(log => log.LogInformation("Applying Key Repeat Settings: RepeatSpeed=31, RepeatDelay=1000"),
+            Times.AtLeastOnce());
     }
 }
