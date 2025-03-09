@@ -12,7 +12,7 @@ builder.SetServiceName();
 builder.AddAppSettingsJson();
 builder.ConfigureSerilog();
 builder.AddApplicationServices();
-var app = builder.Build();
+using var app = builder.Build();
 
 Log.Information("Process Monitor Service Started. Press Ctrl+C to exit.");
 await app.RunAsync();
