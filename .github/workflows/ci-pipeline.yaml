@@ -19,10 +19,18 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+    - name: Setup .NET with Retry
+      uses: nick-fields/retry@v3
       with:
-        dotnet-version: 8.0.x
+        timeout_minutes: 2
+        max_attempts: 3
+        command: |
+          dotnet --version || (
+            curl -sSL https://dot.net/v1/dotnet-install.ps1 -o dotnet-install.ps1;
+            pwsh ./dotnet-install.ps1 -Version 8.0.x -InstallDir $env:DOTNET_ROOT;
+            $env:PATH="$env:DOTNET_ROOT;$env:PATH";
+            dotnet --version
+          )
 
     - name: Cache NuGet packages  
       uses: actions/cache@v4
