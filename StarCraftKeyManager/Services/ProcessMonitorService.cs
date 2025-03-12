@@ -1,22 +1,23 @@
-﻿using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Interop;
-using StarCraftKeyManager.Models;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Interfaces;
+using StarCraftKeyManager.Interop;
+using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Services;
 
 internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 {
     private readonly ILogger<ProcessMonitorService> _logger;
-    private string _processName;
-    private bool _isRunning;
-    private int _processCount;
     private EventLogWatcher? _eventWatcher;
+    private bool _isRunning;
     private KeyRepeatSettings _keyRepeatSettings;
-    
+    private int _processCount;
+    private string _processName;
+
     public ProcessMonitorService(ILogger<ProcessMonitorService> logger, IOptionsMonitor<AppSettings> optionsMonitor)
     {
         _logger = logger;
@@ -24,15 +25,25 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         _keyRepeatSettings = optionsMonitor.CurrentValue.KeyRepeat;
 
         // Monitor settings changes
-        optionsMonitor.OnChange(settings =>
+        optionsMonitor.OnChange(_ =>
         {
-            _processName = settings.ProcessMonitor.ProcessName;
-            _keyRepeatSettings = settings.KeyRepeat;
-            _logger.LogInformation("Configuration changed. Applying new settings...");
-            ApplyKeyRepeatSettings();
+            try
+            {
+                // Trigger validation by accessing CurrentValue
+                var validatedSettings = optionsMonitor.CurrentValue;
+                _processName = validatedSettings.ProcessMonitor.ProcessName;
+                _keyRepeatSettings = validatedSettings.KeyRepeat;
+                _logger.LogInformation("Configuration changed. Applying new settings...");
+                ApplyKeyRepeatSettings();
+            }
+            catch (OptionsValidationException ex)
+            {
+                // Log validation errors
+                _logger.LogError("Settings validation failed: {Errors}", string.Join(", ", ex.Failures));
+            }
         });
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Starting Process Monitor for {_processName}", _processName);
@@ -40,7 +51,7 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         // Get initial process state and apply settings
         UpdateProcessState();
         ApplyKeyRepeatSettings();
-        
+
         // Subscribe to Windows Event Log for process events
         SubscribeToProcessEvents();
 
@@ -98,7 +109,8 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         _processCount = processes.Length;
         _isRunning = _processCount > 0;
 
-        _logger.LogInformation("[Update] Process Running: {IsRunning}, Count: {ProcessCount}", _isRunning, _processCount);
+        _logger.LogInformation("[Update] Process Running: {IsRunning}, Count: {ProcessCount}", _isRunning,
+            _processCount);
         ApplyKeyRepeatSettings();
     }
 
@@ -125,9 +137,9 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         const uint SPI_SETKEYBOARDDELAY = 0x0017;
 
         if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDSPEED, (uint)repeatSpeed, 0, 0))
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            throw new Win32Exception(Marshal.GetLastWin32Error());
 
         if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDDELAY, (uint)repeatDelay / 250, 0, 0))
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 }
