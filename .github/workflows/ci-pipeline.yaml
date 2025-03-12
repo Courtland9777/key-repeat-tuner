@@ -23,7 +23,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '9.0.x' # Use the latest .NET 9.0 SDK
+          dotnet-version: '8.0.x'
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -60,7 +60,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '9.0.x' # Use the latest .NET 9.0 SDK
+          dotnet-version: '8.0.x' # Use the latest .NET 9.0 SDK
 
       - name: Restore Dependencies
         run: dotnet restore
