@@ -39,10 +39,8 @@ jobs:
       - name: Build Project
         run: dotnet build --configuration Release --no-restore
 
-      - name: Run Tests with Admin Privileges
-        shell: pwsh
-        run: |
-          Start-Process -FilePath "dotnet" -ArgumentList "test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout 60s" -Verb RunAs -Wait
+      - name: Run Tests
+        run: dotnet test --configuration Release --no-build --verbosity normal --blame-hang-timeout 60s
 
       - name: Upload Test Logs on Failure
         if: failure()
@@ -62,7 +60,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.0.x' # Use the latest .NET 9.0 SDK
 
       - name: Restore Dependencies
         run: dotnet restore
