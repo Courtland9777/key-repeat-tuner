@@ -57,11 +57,13 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 
         try
         {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            while (!stoppingToken.IsCancellationRequested) await Task.Delay(Timeout.Infinite, stoppingToken);
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException)
         {
             _logger.LogWarning("Process monitoring stopped.");
+            _eventWatcher?.Dispose();
+            Environment.Exit(0);
         }
         finally
         {
