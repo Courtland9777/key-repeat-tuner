@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
+using System.Threading.Channels;
 using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Interop;
@@ -11,6 +12,7 @@ namespace StarCraftKeyManager.Services;
 
 internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 {
+    private readonly Channel<(int EventId, int ProcessId, string ProcessPath)> _eventChannel;
     private readonly ILogger<ProcessMonitorService> _logger;
     private readonly HashSet<int> _trackedProcesses = [];
     private EventLogWatcher? _eventWatcher;
@@ -25,12 +27,14 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         _processName = optionsMonitor.CurrentValue.ProcessMonitor.ProcessName;
         _keyRepeatSettings = optionsMonitor.CurrentValue.KeyRepeat;
 
+        // Event queue for asynchronous event handling
+        _eventChannel = Channel.CreateUnbounded<(int, int, string)>();
+
         // Monitor settings changes
         optionsMonitor.OnChange(_ =>
         {
             try
             {
-                // Trigger validation by accessing CurrentValue
                 var validatedSettings = optionsMonitor.CurrentValue;
                 _processName = validatedSettings.ProcessMonitor.ProcessName;
                 _keyRepeatSettings = validatedSettings.KeyRepeat;
@@ -39,7 +43,6 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
             }
             catch (OptionsValidationException ex)
             {
-                // Log validation errors
                 _logger.LogError("Settings validation failed: {Errors}", string.Join(", ", ex.Failures));
             }
         });
@@ -56,20 +59,8 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         // Subscribe to Windows Event Log for process events
         SubscribeToProcessEvents();
 
-        try
-        {
-            while (!stoppingToken.IsCancellationRequested) await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Process monitoring stopped.");
-            _eventWatcher?.Dispose();
-            throw;
-        }
-        finally
-        {
-            _eventWatcher?.Dispose();
-        }
+        // Start processing events asynchronously
+        await ProcessEventsAsync(stoppingToken);
     }
 
     private void SubscribeToProcessEvents()
@@ -89,7 +80,7 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         };
 
         _eventWatcher = new EventLogWatcher(eventQuery);
-        _eventWatcher.EventRecordWritten += (sender, e) =>
+        _eventWatcher.EventRecordWritten += async (sender, e) =>
         {
             try
             {
@@ -106,12 +97,10 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
                 switch (eventId)
                 {
                     case 4688 when eventProps.Count > 4:
-                        // Process Created (4688) -> NewProcessName (index 5), Process ID (index 4)
                         processPath = eventProps[5].Value as string;
                         processId = eventProps[4].Value as int?;
                         break;
                     case 4689 when eventProps.Count > 3:
-                        // Process Terminated (4689) -> ProcessName (index 6), Process ID (index 3)
                         processPath = eventProps[6].Value as string;
                         processId = eventProps[3].Value as int?;
                         break;
@@ -119,11 +108,11 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 
                 if (string.IsNullOrEmpty(processPath) || !processId.HasValue) return;
 
-                // Extract process name (remove full path)
                 var detectedProcessName = Path.GetFileNameWithoutExtension(processPath);
 
                 if (string.Equals(detectedProcessName, _processName, StringComparison.OrdinalIgnoreCase))
-                    UpdateProcessState(processId.Value, eventId == 4688);
+                    // Enqueue the event for asynchronous processing
+                    await _eventChannel.Writer.WriteAsync((eventId, processId.Value, detectedProcessName));
             }
             catch (Exception ex)
             {
@@ -135,6 +124,22 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         _logger.LogInformation("Subscribed to process start/stop events for {_processName}", _processName);
     }
 
+    private async Task ProcessEventsAsync(CancellationToken stoppingToken)
+    {
+        await foreach (var (eventId, processId, processName) in _eventChannel.Reader.ReadAllAsync(stoppingToken))
+            try
+            {
+                _logger.LogDebug("Processing event: {EventId}, ProcessId: {ProcessId}, ProcessName: {ProcessName}",
+                    eventId, processId, processName);
+
+                var processStarted = eventId == 4688;
+                UpdateProcessState(processId, processStarted);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling process event asynchronously.");
+            }
+    }
 
     private void UpdateProcessState(int? processId = null, bool processStarted = false)
     {
