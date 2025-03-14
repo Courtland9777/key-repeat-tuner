@@ -63,7 +63,7 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         {
             _logger.LogWarning("Process monitoring stopped.");
             _eventWatcher?.Dispose();
-            Environment.Exit(0);
+            throw;
         }
         finally
         {
@@ -107,12 +107,14 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 
     private void UpdateProcessState()
     {
-        var processes = Process.GetProcessesByName(_processName.Replace(".exe", string.Empty));
-        _processCount = processes.Length;
+        var sanitizedProcessName = _processName.Replace(".exe", string.Empty, StringComparison.OrdinalIgnoreCase);
+        _processCount = Process.GetProcessesByName(sanitizedProcessName).Length;
         _isRunning = _processCount > 0;
-
-        _logger.LogInformation("[Update] Process Running: {IsRunning}, Count: {ProcessCount}", _isRunning,
-            _processCount);
+        _logger.LogInformation(
+            "[Update] Process Running: {IsRunning}, Count: {ProcessCount}",
+            _isRunning,
+            _processCount
+        );
         ApplyKeyRepeatSettings();
     }
 
@@ -130,6 +132,7 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update key repeat settings.");
+            throw;
         }
     }
 
