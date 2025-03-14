@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <OutputType>exe</OutputType>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PlatformTarget>x64</PlatformTarget>
     <UserSecretsId>dotnet-StarCraftKeyManager-4f93ac09-61b2-453c-9e16-b4cad5f961c4</UserSecretsId>
