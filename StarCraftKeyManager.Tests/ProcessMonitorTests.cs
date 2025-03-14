@@ -1,7 +1,7 @@
-﻿using System.Diagnostics;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 
@@ -11,6 +11,7 @@ public class ProcessMonitorTests
 {
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger = new();
     private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptionsMonitor = new();
+    private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher = new();
 
     public ProcessMonitorTests()
     {
@@ -28,31 +29,98 @@ public class ProcessMonitorTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldDetectProcessStartAndStop()
+    public async Task ProcessMonitor_ShouldApplyInitialSettings_OnStart()
     {
-        var monitorService = new ProcessMonitorService(_mockLogger.Object, _mockOptionsMonitor.Object);
-        var cancellationTokenSource = new CancellationTokenSource();
+        var service = new ProcessMonitorService(
+            _mockLogger.Object,
+            _mockOptionsMonitor.Object,
+            _mockProcessEventWatcher.Object);
+        var cts = new CancellationTokenSource();
 
-        // Run the monitoring service in the background
-        var task = monitorService.StartAsync(cancellationTokenSource.Token);
+        await service.StartAsync(cts.Token);
 
-        // Simulate launching Notepad
-        var process = Process.Start("notepad.exe");
-        Assert.NotNull(process);
-        await Task.Delay(2000, cancellationTokenSource.Token); // Give it time to detect
+        _mockProcessEventWatcher.Verify(m => m.Start(), Times.Once);
 
-        // Simulate closing Notepad
-        process.Kill();
-        await Task.Delay(2000, cancellationTokenSource.Token); // Give it time to detect
+        _mockLogger.Verify(log => log.LogInformation(
+                "Applying key repeat settings: {@Settings}",
+                It.Is<KeyRepeatState>(state => state.RepeatSpeed == 31 && state.RepeatDelay == 1000)),
+            Times.Once);
 
-        // Stop monitoring
-        await cancellationTokenSource.CancelAsync();
-        await task;
+        await service.StopAsync(cts.Token);
 
-        // Validate that logs contain process start and stop events
-        _mockLogger.Verify(log => log.LogInformation("Applying Key Repeat Settings: RepeatSpeed=20, RepeatDelay=500"),
-            Times.AtLeastOnce());
-        _mockLogger.Verify(log => log.LogInformation("Applying Key Repeat Settings: RepeatSpeed=31, RepeatDelay=1000"),
-            Times.AtLeastOnce());
+        _mockProcessEventWatcher.Verify(m => m.Stop(), Times.Once);
+    }
+
+
+    [Fact]
+    public void ProcessMonitor_ShouldHandleProcessStartEvent()
+    {
+        var service = new ProcessMonitorService(
+            _mockLogger.Object, _mockOptionsMonitor.Object, _mockProcessEventWatcher.Object);
+
+        _mockProcessEventWatcher.Raise(m => m.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "notepad.exe"));
+
+        _mockLogger.Verify(log => log.LogInformation(
+            "Process event occurred: {EventId} for PID {ProcessId}", 4688, 1234), Times.Once);
+
+        _mockLogger.Verify(log => log.LogInformation(
+                "Applying key repeat settings: {@Settings}",
+                It.Is<KeyRepeatState>(state => state.RepeatSpeed == 20 && state.RepeatDelay == 500)),
+            Times.Once);
+    }
+
+    [Fact]
+    public void ProcessMonitor_ShouldHandleProcessStopEvent()
+    {
+        var service = new ProcessMonitorService(
+            _mockLogger.Object,
+            _mockOptionsMonitor.Object,
+            _mockProcessEventWatcher.Object);
+
+        // Simulate process start
+        _mockProcessEventWatcher.Raise(m => m.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "notepad.exe"));
+
+        // Simulate process stop
+        _mockProcessEventWatcher.Raise(m => m.ProcessEventOccurred += null,
+            new ProcessEventArgs(4689, 1234, "notepad.exe"));
+
+        _mockLogger.Verify(log => log.LogInformation(
+            "Process event occurred: {EventId} for PID {ProcessId}",
+            4689, 1234), Times.Once);
+
+        _mockLogger.Verify(log => log.LogInformation(
+                "Applying key repeat settings: {@Settings}",
+                It.Is<KeyRepeatState>(state => state.RepeatSpeed == 31 && state.RepeatDelay == 1000)),
+            Times.Once);
+    }
+
+    [Fact]
+    public void ProcessMonitor_ShouldUpdateConfiguration_OnOptionsChange()
+    {
+        // Arrange
+        Action<AppSettings, string?>? capturedOnChange = null;
+
+        _mockOptionsMonitor
+            .Setup(m => m.OnChange(It.IsAny<Action<AppSettings, string?>>()))
+            .Callback<Action<AppSettings, string?>>(callback => capturedOnChange = callback);
+
+        var newSettings = new AppSettings
+        {
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "calc.exe" },
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 30, RepeatDelay = 750 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 400 }
+            }
+        };
+
+        // Act (invoke captured callback)
+        capturedOnChange?.Invoke(newSettings, null);
+
+        // Assert
+        _mockProcessEventWatcher.Verify(m => m.Configure("calc.exe"), Times.Once);
+        _mockLogger.Verify(log => log.LogInformation("Configuration updated: {@Settings}", newSettings), Times.Once);
     }
 }
