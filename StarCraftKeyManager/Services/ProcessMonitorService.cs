@@ -12,6 +12,7 @@ namespace StarCraftKeyManager.Services;
 internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 {
     private readonly ILogger<ProcessMonitorService> _logger;
+    private readonly HashSet<int> _trackedProcesses = [];
     private EventLogWatcher? _eventWatcher;
     private bool _isRunning;
     private KeyRepeatSettings _keyRepeatSettings;
@@ -99,20 +100,30 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
 
                 if (eventProps == null || eventProps.Count == 0) return;
 
-                var processPath = eventId switch
-                {
-                    4688 when eventProps.Count > 5 => eventProps[5].Value as string,
-                    4689 when eventProps.Count > 6 => eventProps[6].Value as string,
-                    _ => null
-                };
+                string? processPath = null;
+                int? processId = null;
 
-                if (string.IsNullOrEmpty(processPath)) return;
+                switch (eventId)
+                {
+                    case 4688 when eventProps.Count > 4:
+                        // Process Created (4688) -> NewProcessName (index 5), Process ID (index 4)
+                        processPath = eventProps[5].Value as string;
+                        processId = eventProps[4].Value as int?;
+                        break;
+                    case 4689 when eventProps.Count > 3:
+                        // Process Terminated (4689) -> ProcessName (index 6), Process ID (index 3)
+                        processPath = eventProps[6].Value as string;
+                        processId = eventProps[3].Value as int?;
+                        break;
+                }
+
+                if (string.IsNullOrEmpty(processPath) || !processId.HasValue) return;
 
                 // Extract process name (remove full path)
                 var detectedProcessName = Path.GetFileNameWithoutExtension(processPath);
 
                 if (string.Equals(detectedProcessName, _processName, StringComparison.OrdinalIgnoreCase))
-                    UpdateProcessState();
+                    UpdateProcessState(processId.Value, eventId == 4688);
             }
             catch (Exception ex)
             {
@@ -125,16 +136,33 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
     }
 
 
-    private void UpdateProcessState()
+    private void UpdateProcessState(int? processId = null, bool processStarted = false)
     {
         var sanitizedProcessName = _processName.Replace(".exe", string.Empty, StringComparison.OrdinalIgnoreCase);
-        _processCount = Process.GetProcessesByName(sanitizedProcessName).Length;
+
+        if (processId.HasValue)
+        {
+            if (processStarted)
+                _trackedProcesses.Add(processId.Value);
+            else
+                _trackedProcesses.Remove(processId.Value);
+        }
+        else
+        {
+            // Full refresh only when necessary
+            _trackedProcesses.Clear();
+            foreach (var process in Process.GetProcessesByName(sanitizedProcessName)) _trackedProcesses.Add(process.Id);
+        }
+
+        _processCount = _trackedProcesses.Count;
         _isRunning = _processCount > 0;
+
         _logger.LogInformation(
             "[Update] Process Running: {IsRunning}, Count: {ProcessCount}",
             _isRunning,
             _processCount
         );
+
         ApplyKeyRepeatSettings();
     }
 
