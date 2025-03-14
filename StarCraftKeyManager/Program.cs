@@ -7,11 +7,12 @@ if (!ConfigurationHelpers.IsRunningAsAdmin())
     Environment.Exit(1);
 }
 
-var builder = Host.CreateDefaultBuilder(args);
+var builder = Host.CreateApplicationBuilder(args);
 builder.SetServiceName();
 builder.AddAppSettingsJson();
 builder.ConfigureSerilog();
 builder.AddApplicationServices();
+
 using var app = builder.Build();
 
 Log.Information("Process Monitor Service Started. Press Ctrl+C to exit.");
