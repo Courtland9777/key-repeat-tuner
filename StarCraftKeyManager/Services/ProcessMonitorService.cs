@@ -44,148 +44,213 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
             catch (OptionsValidationException ex)
             {
                 _logger.LogError("Settings validation failed: {Errors}", string.Join(", ", ex.Failures));
+                // Do not throw; we should not crash the service over configuration issues.
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while processing configuration changes.");
             }
         });
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Starting Process Monitor for {_processName}", _processName);
+        try
+        {
+            _logger.LogInformation("Starting Process Monitor for {_processName}", _processName);
 
-        // Get initial process state and apply settings
-        UpdateProcessState();
-        ApplyKeyRepeatSettings();
+            // Get initial process state and apply settings
+            UpdateProcessState();
+            ApplyKeyRepeatSettings();
 
-        // Subscribe to Windows Event Log for process events
-        SubscribeToProcessEvents();
+            // Subscribe to Windows Event Log for process events
+            SubscribeToProcessEvents();
 
-        // Start processing events asynchronously
-        await ProcessEventsAsync(stoppingToken);
+            // Start processing events asynchronously
+            await ProcessEventsAsync(stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Process monitoring is stopping gracefully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "ProcessMonitorService encountered a fatal error.");
+        }
+        finally
+        {
+            _eventWatcher?.Dispose();
+            _logger.LogInformation("Process Monitor Service has stopped.");
+        }
     }
 
     private void SubscribeToProcessEvents()
     {
-        const string query = @"
+        try
+        {
+            var sanitizedProcessName = _processName.Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
+
+            var query = $@"
         <QueryList>
             <Query Id='0' Path='Security'>
                 <Select Path='Security'>
                     *[System[(EventID=4688 or EventID=4689)]]
+                    and *[EventData[Data[@Name='NewProcessName'] and (contains(.,'{sanitizedProcessName}'))]]
                 </Select>
             </Query>
         </QueryList>";
 
-        var eventQuery = new EventLogQuery("Security", PathType.LogName, query)
-        {
-            ReverseDirection = true
-        };
-
-        _eventWatcher = new EventLogWatcher(eventQuery);
-        _eventWatcher.EventRecordWritten += async (sender, e) =>
-        {
-            try
+            var eventQuery = new EventLogQuery("Security", PathType.LogName, query)
             {
-                if (e.EventRecord == null) return;
+                ReverseDirection = true
+            };
 
-                var eventId = e.EventRecord.Id;
-                var eventProps = e.EventRecord.Properties;
-
-                if (eventProps == null || eventProps.Count == 0) return;
-
-                string? processPath = null;
-                int? processId = null;
-
-                switch (eventId)
+            _eventWatcher = new EventLogWatcher(eventQuery);
+            _eventWatcher.EventRecordWritten += async (sender, e) =>
+            {
+                try
                 {
-                    case 4688 when eventProps.Count > 4:
-                        processPath = eventProps[5].Value as string;
-                        processId = eventProps[4].Value as int?;
-                        break;
-                    case 4689 when eventProps.Count > 3:
-                        processPath = eventProps[6].Value as string;
-                        processId = eventProps[3].Value as int?;
-                        break;
+                    if (e.EventRecord == null) return;
+
+                    var eventId = e.EventRecord.Id;
+                    var eventProps = e.EventRecord.Properties;
+
+                    if (eventProps == null || eventProps.Count == 0) return;
+
+                    string? processPath = null;
+                    int? processId = null;
+
+                    switch (eventId)
+                    {
+                        case 4688 when eventProps.Count > 4:
+                            processPath = eventProps[5].Value as string;
+                            processId = eventProps[4].Value as int?;
+                            break;
+                        case 4689 when eventProps.Count > 3:
+                            processPath = eventProps[6].Value as string;
+                            processId = eventProps[3].Value as int?;
+                            break;
+                    }
+
+                    if (string.IsNullOrEmpty(processPath) || !processId.HasValue) return;
+
+                    var detectedProcessName = Path.GetFileNameWithoutExtension(processPath);
+
+                    if (string.Equals(detectedProcessName, _processName, StringComparison.OrdinalIgnoreCase))
+                        await _eventChannel.Writer.WriteAsync((eventId, processId.Value, detectedProcessName));
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing event log entry.");
+                }
+            };
 
-                if (string.IsNullOrEmpty(processPath) || !processId.HasValue) return;
-
-                var detectedProcessName = Path.GetFileNameWithoutExtension(processPath);
-
-                if (string.Equals(detectedProcessName, _processName, StringComparison.OrdinalIgnoreCase))
-                    // Enqueue the event for asynchronous processing
-                    await _eventChannel.Writer.WriteAsync((eventId, processId.Value, detectedProcessName));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing event log entry.");
-            }
-        };
-
-        _eventWatcher.Enabled = true;
-        _logger.LogInformation("Subscribed to process start/stop events for {_processName}", _processName);
+            _eventWatcher.Enabled = true;
+            _logger.LogInformation("Subscribed to process start/stop events for {_processName}", _processName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Failed to subscribe to process events.");
+        }
     }
 
     private async Task ProcessEventsAsync(CancellationToken stoppingToken)
     {
-        await foreach (var (eventId, processId, processName) in _eventChannel.Reader.ReadAllAsync(stoppingToken))
-            try
-            {
-                _logger.LogDebug("Processing event: {EventId}, ProcessId: {ProcessId}, ProcessName: {ProcessName}",
-                    eventId, processId, processName);
+        try
+        {
+            await foreach (var (eventId, processId, processName) in _eventChannel.Reader.ReadAllAsync(stoppingToken))
+                try
+                {
+                    _logger.LogDebug("Processing event: {EventId}, ProcessId: {ProcessId}, ProcessName: {ProcessName}",
+                        eventId, processId, processName);
 
-                var processStarted = eventId == 4688;
-                UpdateProcessState(processId, processStarted);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling process event asynchronously.");
-            }
+                    var processStarted = eventId == 4688;
+                    UpdateProcessState(processId, processStarted);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error handling process event asynchronously.");
+                }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Event processing was canceled. Draining remaining events...");
+
+            while (_eventChannel.Reader.TryRead(out var remainingEvent))
+                try
+                {
+                    var (eventId, processId, processName) = remainingEvent;
+                    _logger.LogDebug(
+                        "Processing remaining event: {EventId}, ProcessId: {ProcessId}, ProcessName: {ProcessName}",
+                        eventId, processId, processName);
+                    UpdateProcessState(processId, eventId == 4688);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error handling remaining process event.");
+                }
+
+            _logger.LogInformation("Event processing fully stopped.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Unexpected error in ProcessEventsAsync.");
+        }
     }
+
 
     private void UpdateProcessState(int? processId = null, bool processStarted = false)
     {
-        var sanitizedProcessName = _processName.Replace(".exe", string.Empty, StringComparison.OrdinalIgnoreCase);
-
-        if (processId.HasValue)
+        try
         {
-            if (processStarted)
-                _trackedProcesses.Add(processId.Value);
-            else
-                _trackedProcesses.Remove(processId.Value);
+            var sanitizedProcessName = _processName.Replace(".exe", string.Empty, StringComparison.OrdinalIgnoreCase);
+
+            if (processId.HasValue)
+            {
+                if (processStarted)
+                    _trackedProcesses.Add(processId.Value);
+                else
+                    _trackedProcesses.Remove(processId.Value);
+            }
+            else if (_trackedProcesses.Count == 0)
+            {
+                // Only refresh if we have no processes tracked
+                _trackedProcesses.Clear();
+                foreach (var process in Process.GetProcessesByName(sanitizedProcessName))
+                    _trackedProcesses.Add(process.Id);
+            }
+
+            var newProcessCount = _trackedProcesses.Count;
+            if (newProcessCount == _processCount) return;
+            _processCount = newProcessCount;
+            _isRunning = _processCount > 0;
+
+            _logger.LogInformation("[Update] Process Running: {IsRunning}, Count: {ProcessCount}",
+                _isRunning, _processCount);
+
+            ApplyKeyRepeatSettings();
         }
-        else
+        catch (Exception ex)
         {
-            // Full refresh only when necessary
-            _trackedProcesses.Clear();
-            foreach (var process in Process.GetProcessesByName(sanitizedProcessName)) _trackedProcesses.Add(process.Id);
+            _logger.LogError(ex, "Error updating process state.");
         }
-
-        _processCount = _trackedProcesses.Count;
-        _isRunning = _processCount > 0;
-
-        _logger.LogInformation(
-            "[Update] Process Running: {IsRunning}, Count: {ProcessCount}",
-            _isRunning,
-            _processCount
-        );
-
-        ApplyKeyRepeatSettings();
     }
+
 
     private void ApplyKeyRepeatSettings()
     {
-        var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
-
-        _logger.LogInformation("Applying Key Repeat Settings: RepeatSpeed={RepeatSpeed}, RepeatDelay={RepeatDelay}",
-            settings.RepeatSpeed, settings.RepeatDelay);
-
         try
         {
+            var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
+
+            _logger.LogInformation("Applying Key Repeat Settings: RepeatSpeed={RepeatSpeed}, RepeatDelay={RepeatDelay}",
+                settings.RepeatSpeed, settings.RepeatDelay);
+
             SetKeyboardRepeat(settings.RepeatSpeed, settings.RepeatDelay);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update key repeat settings.");
-            throw;
         }
     }
 
