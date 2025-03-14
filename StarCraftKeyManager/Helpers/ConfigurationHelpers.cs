@@ -1,4 +1,5 @@
 ﻿using System.Security.Principal;
+using FluentValidation.Results;
 using Serilog;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
@@ -12,7 +13,7 @@ public static class ConfigurationHelpers
     public static void AddAppSettingsJson(this IHostBuilder hostBuilder)
     {
         hostBuilder.ConfigureAppConfiguration(config =>
-            config.AddJsonFile("appsettings.json", optional: true));
+            config.AddJsonFile("appsettings.json", true));
     }
 
     public static void SetServiceName(this IHostBuilder hostBuilder)
@@ -38,19 +39,19 @@ public static class ConfigurationHelpers
             {
                 LogValidationErrors(validationResults);
                 Log.Warning("Using default key repeat settings due to invalid configuration.");
+                throw new InvalidOperationException(
+                    "Invalid AppSettings detected. Please correct the errors and restart the application.");
             }
-            else
-                RegisterServices(services, context.Configuration);
+
+            RegisterServices(services, context.Configuration);
         });
     }
 
-    private static void LogValidationErrors(FluentValidation.Results.ValidationResult validationResults)
+    private static void LogValidationErrors(ValidationResult validationResults)
     {
         foreach (var failure in validationResults.Errors)
-        {
             Log.Warning("Invalid configuration: {PropertyName} - {ErrorMessage}",
                 failure.PropertyName, failure.ErrorMessage);
-        }
     }
 
     private static void RegisterServices(IServiceCollection services, IConfiguration configuration)
