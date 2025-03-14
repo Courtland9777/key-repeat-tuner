@@ -74,13 +74,13 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
     private void SubscribeToProcessEvents()
     {
         const string query = @"
-            <QueryList>
-                <Query Id='0' Path='Security'>
-                    <Select Path='Security'>
-                        *[System[(EventID=4688 or EventID=4689)]]
-                    </Select>
-                </Query>
-            </QueryList>";
+        <QueryList>
+            <Query Id='0' Path='Security'>
+                <Select Path='Security'>
+                    *[System[(EventID=4688 or EventID=4689)]]
+                </Select>
+            </Query>
+        </QueryList>";
 
         var eventQuery = new EventLogQuery("Security", PathType.LogName, query)
         {
@@ -90,20 +90,40 @@ internal class ProcessMonitorService : BackgroundService, IProcessMonitorService
         _eventWatcher = new EventLogWatcher(eventQuery);
         _eventWatcher.EventRecordWritten += (sender, e) =>
         {
-            if (e.EventRecord == null) return;
+            try
+            {
+                if (e.EventRecord == null) return;
 
-            var eventMessage = e.EventRecord.FormatDescription();
-            if (string.IsNullOrEmpty(eventMessage)) return;
+                var eventId = e.EventRecord.Id;
+                var eventProps = e.EventRecord.Properties;
 
-            if (!eventMessage.Contains(_processName, StringComparison.OrdinalIgnoreCase)) return;
-            if (e.EventRecord.Id is 4688 or // Process Created
-                4689) // Process Terminated
-                UpdateProcessState();
+                if (eventProps == null || eventProps.Count == 0) return;
+
+                var processPath = eventId switch
+                {
+                    4688 when eventProps.Count > 5 => eventProps[5].Value as string,
+                    4689 when eventProps.Count > 6 => eventProps[6].Value as string,
+                    _ => null
+                };
+
+                if (string.IsNullOrEmpty(processPath)) return;
+
+                // Extract process name (remove full path)
+                var detectedProcessName = Path.GetFileNameWithoutExtension(processPath);
+
+                if (string.Equals(detectedProcessName, _processName, StringComparison.OrdinalIgnoreCase))
+                    UpdateProcessState();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing event log entry.");
+            }
         };
 
         _eventWatcher.Enabled = true;
         _logger.LogInformation("Subscribed to process start/stop events for {_processName}", _processName);
     }
+
 
     private void UpdateProcessState()
     {
