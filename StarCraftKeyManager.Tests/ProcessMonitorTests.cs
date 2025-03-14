@@ -55,9 +55,6 @@ public class ProcessMonitorTests
     [Fact]
     public void ProcessMonitor_ShouldHandleProcessStartEvent()
     {
-        var service = new ProcessMonitorService(
-            _mockLogger.Object, _mockOptionsMonitor.Object, _mockProcessEventWatcher.Object);
-
         _mockProcessEventWatcher.Raise(m => m.ProcessEventOccurred += null,
             new ProcessEventArgs(4688, 1234, "notepad.exe"));
 
@@ -73,11 +70,6 @@ public class ProcessMonitorTests
     [Fact]
     public void ProcessMonitor_ShouldHandleProcessStopEvent()
     {
-        var service = new ProcessMonitorService(
-            _mockLogger.Object,
-            _mockOptionsMonitor.Object,
-            _mockProcessEventWatcher.Object);
-
         // Simulate process start
         _mockProcessEventWatcher.Raise(m => m.ProcessEventOccurred += null,
             new ProcessEventArgs(4688, 1234, "notepad.exe"));
