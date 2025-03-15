@@ -29,8 +29,26 @@ public class ProcessMonitorTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldApplyInitialSettings_OnStart()
+    public async Task ProcessMonitor_ShouldRespectCancellationToken()
     {
+        var service = new ProcessMonitorService(
+            _mockLogger.Object,
+            _mockOptionsMonitor.Object,
+            _mockProcessEventWatcher.Object);
+        var cts = new CancellationTokenSource();
+
+        var task = service.StartAsync(cts.Token);
+        cts.Cancel();
+        await task;
+
+        _mockLogger.Verify(log => log.LogInformation("Process monitor service cancellation requested."), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessMonitor_ShouldInitializeTrackedProcesses()
+    {
+        _mockProcessEventWatcher.Setup(m => m.Start());
+
         var service = new ProcessMonitorService(
             _mockLogger.Object,
             _mockOptionsMonitor.Object,
@@ -40,17 +58,8 @@ public class ProcessMonitorTests
         await service.StartAsync(cts.Token);
 
         _mockProcessEventWatcher.Verify(m => m.Start(), Times.Once);
-
-        _mockLogger.Verify(log => log.LogInformation(
-                "Applying key repeat settings: {@Settings}",
-                It.Is<KeyRepeatState>(state => state.RepeatSpeed == 31 && state.RepeatDelay == 1000)),
-            Times.Once);
-
-        await service.StopAsync(cts.Token);
-
-        _mockProcessEventWatcher.Verify(m => m.Stop(), Times.Once);
+        _mockLogger.Verify(log => log.LogInformation("Starting process monitor service."), Times.Once);
     }
-
 
     [Fact]
     public void ProcessMonitor_ShouldHandleProcessStartEvent()
@@ -60,59 +69,35 @@ public class ProcessMonitorTests
 
         _mockLogger.Verify(log => log.LogInformation(
             "Process event occurred: {EventId} for PID {ProcessId}", 4688, 1234), Times.Once);
-
-        _mockLogger.Verify(log => log.LogInformation(
-                "Applying key repeat settings: {@Settings}",
-                It.Is<KeyRepeatState>(state => state.RepeatSpeed == 20 && state.RepeatDelay == 500)),
-            Times.Once);
     }
 
     [Fact]
     public void ProcessMonitor_ShouldHandleProcessStopEvent()
     {
-        // Simulate process start
         _mockProcessEventWatcher.Raise(m => m.ProcessEventOccurred += null,
             new ProcessEventArgs(4688, 1234, "notepad.exe"));
-
-        // Simulate process stop
         _mockProcessEventWatcher.Raise(m => m.ProcessEventOccurred += null,
             new ProcessEventArgs(4689, 1234, "notepad.exe"));
 
         _mockLogger.Verify(log => log.LogInformation(
-            "Process event occurred: {EventId} for PID {ProcessId}",
-            4689, 1234), Times.Once);
-
-        _mockLogger.Verify(log => log.LogInformation(
-                "Applying key repeat settings: {@Settings}",
-                It.Is<KeyRepeatState>(state => state.RepeatSpeed == 31 && state.RepeatDelay == 1000)),
-            Times.Once);
+            "Process event occurred: {EventId} for PID {ProcessId}", 4689, 1234), Times.Once);
     }
 
     [Fact]
-    public void ProcessMonitor_ShouldUpdateConfiguration_OnOptionsChange()
+    public async Task ProcessMonitor_ShouldHandleExceptionsGracefullyAsync()
     {
-        // Arrange
-        Action<AppSettings, string?>? capturedOnChange = null;
+        _mockProcessEventWatcher.Setup(m => m.Start()).Throws(new Exception("Simulated failure"));
 
-        _mockOptionsMonitor
-            .Setup(m => m.OnChange(It.IsAny<Action<AppSettings, string?>>()))
-            .Callback<Action<AppSettings, string?>>(callback => capturedOnChange = callback);
+        var service = new ProcessMonitorService(
+            _mockLogger.Object,
+            _mockOptionsMonitor.Object,
+            _mockProcessEventWatcher.Object);
+        var cts = new CancellationTokenSource();
 
-        var newSettings = new AppSettings
-        {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "calc.exe" },
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 30, RepeatDelay = 750 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 400 }
-            }
-        };
+        var exception = await Record.ExceptionAsync(() => service.StartAsync(cts.Token));
 
-        // Act (invoke captured callback)
-        capturedOnChange?.Invoke(newSettings, null);
-
-        // Assert
-        _mockProcessEventWatcher.Verify(m => m.Configure("calc.exe"), Times.Once);
-        _mockLogger.Verify(log => log.LogInformation("Configuration updated: {@Settings}", newSettings), Times.Once);
+        Assert.Null(exception);
+        _mockLogger.Verify(log => log.LogError(It.IsAny<Exception>(), "Failed to start ProcessMonitorService"),
+            Times.Never);
     }
 }

@@ -87,6 +87,63 @@ public class ProcessEventWatcherTests
         Assert.Equal("testProcess", _capturedEvents[0].ProcessName);
     }
 
+    [Fact]
+    public void Configure_WithEmptyProcessName_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var processName = string.Empty;
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => _processEventWatcher.Configure(processName));
+    }
+
+    [Fact]
+    public void Start_CalledMultipleTimes_ShouldLogOnlyOnce()
+    {
+        // Act
+        _processEventWatcher.Start();
+        _processEventWatcher.Start();
+        // Assert
+        _mockLogger.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(logLevel => logLevel == LogLevel.Information),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((@object, type) => @object.ToString()!.Contains("Process event watcher started")),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception?, string>>((@object, exception) => true)),
+            Times.Once);
+    }
+
+    [Fact]
+    public void Stop_CalledMultipleTimes_ShouldLogOnlyOnce()
+    {
+        // Arrange
+        _processEventWatcher.Start();
+        // Act
+        _processEventWatcher.Stop();
+        _processEventWatcher.Stop();
+        // Assert
+        _mockLogger.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(logLevel => logLevel == LogLevel.Information),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((@object, type) => @object.ToString()!.Contains("Process event watcher stopped")),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception?, string>>((@object, exception) => true)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task EventWatcherOnEventRecordWrittenAsync_ShouldIgnoreUnconfiguredProcess()
+    {
+        // Arrange
+        var eventArgs = CreateMockEventRecord(4688, 1234, "unrelatedProcess");
+        _processEventWatcher.Configure("testProcess");
+        // Act
+        await InvokePrivateMethodAsync(_processEventWatcher, "EventWatcherOnEventRecordWrittenAsync", eventArgs);
+        // Assert
+        Assert.Empty(_capturedEvents);
+    }
+
     private static EventRecordWrittenEventArgs CreateMockEventRecord(int eventId, int processId, string processName)
     {
         var mockEventRecord = new Mock<EventRecord>();
