@@ -9,7 +9,7 @@ using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Services;
 
-internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitorService
+internal sealed class ProcessMonitorService : BackgroundService
 {
     private readonly ILogger<ProcessMonitorService> _logger;
     private readonly IProcessEventWatcher _processEventWatcher;

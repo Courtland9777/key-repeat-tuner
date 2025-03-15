@@ -59,7 +59,7 @@ public static class ConfigurationHelpers
     private static void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<AppSettings>(configuration);
-        services.AddSingleton<IProcessMonitorService, ProcessMonitorService>();
+        services.AddSingleton<ProcessMonitorService>();
         services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
     }
