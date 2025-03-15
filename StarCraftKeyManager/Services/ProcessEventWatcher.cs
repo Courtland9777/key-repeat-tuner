@@ -9,7 +9,7 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
     private readonly ILogger<ProcessEventWatcher> _logger;
     private EventHandler<EventRecordWrittenEventArgs>? _eventHandler;
     private EventLogWatcher? _eventWatcher;
-    private string _processName = string.Empty;
+    private bool _isStarted;
 
     public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger)
     {
@@ -20,44 +20,38 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
 
     public void Configure(string processName)
     {
-        _processName = processName.Replace(".exe", string.Empty, StringComparison.OrdinalIgnoreCase);
+        const string query =
+            "<QueryList><Query Id='0' Path='Security'><Select Path='Security'>*[System[(EventID=4688 or EventID=4689)]]</Select></Query></QueryList>";
+        var eventQuery = new EventLogQuery("Security", PathType.LogName, query)
+        {
+            ReverseDirection = true
+        };
+        _eventWatcher = new EventLogWatcher(eventQuery);
+        _eventHandler = EventWatcherOnEventRecordWritten;
     }
 
     public void Start()
     {
-        var query = $@"
-    <QueryList>
-        <Query Id='0' Path='Security'>
-            <Select Path='Security'>
-                *[System[(EventID=4688 or EventID=4689)]]
-                and *[EventData[Data[@Name='NewProcessName'] and (contains(.,'{_processName}'))]]
-            </Select>
-        </Query>
-    </QueryList>";
-        var eventQuery = new EventLogQuery("Security", PathType.LogName, query);
-        _eventWatcher = new EventLogWatcher(eventQuery);
-        // Store the event handler in a field
-        _eventWatcher.EventRecordWritten += (sender, e) => { _ = HandleEventRecordWrittenAsync(e); };
+        if (_isStarted || _eventWatcher == null) return;
+
         _eventWatcher.EventRecordWritten += _eventHandler;
         _eventWatcher.Enabled = true;
-        _logger.LogInformation("Process event watcher started for {ProcessName}.", _processName);
+        _isStarted = true;
+
+        _logger.LogInformation("Process event watcher started.");
     }
 
     public void Stop()
     {
-        if (_eventWatcher != null)
-        {
-            if (_eventHandler != null)
-            {
-                _eventWatcher.EventRecordWritten -= _eventHandler;
-                _eventHandler = null;
-            }
+        if (!_isStarted || _eventWatcher == null) return;
 
-            _eventWatcher.Dispose();
-            _eventWatcher = null;
-        }
+        _eventWatcher.Enabled = false;
+        _eventWatcher.EventRecordWritten -= _eventHandler;
+        _eventWatcher.Dispose();
+        _eventWatcher = null;
+        _isStarted = false;
 
-        _logger.LogInformation("Process event watcher stopped for {ProcessName}.", _processName);
+        _logger.LogInformation("Process event watcher stopped.");
     }
 
     public void Dispose()
@@ -65,38 +59,41 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         Stop();
     }
 
-    private async Task EventWatcherOnEventRecordWrittenAsync(EventRecordWrittenEventArgs e)
+    private void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
     {
-        if (e.EventRecord == null || e.EventRecord.Properties.Count == 0)
-            return;
-        var eventId = e.EventRecord.Id;
-        var processId = eventId == 4688
-            ? e.EventRecord.Properties[4].Value as int?
-            : e.EventRecord.Properties[3].Value as int?;
-        var processPath = e.EventRecord.Properties.Count > 5
-            ? e.EventRecord.Properties[5].Value as string ?? string.Empty
-            : string.Empty;
-        var detectedProcessName = Path.GetFileNameWithoutExtension(processPath);
-        if (!string.Equals(detectedProcessName, _processName, StringComparison.OrdinalIgnoreCase))
-            return;
-        if (!processId.HasValue) return;
-        await Task.Run(() =>
-        {
-            ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(eventId, processId.Value, detectedProcessName));
-            _logger.LogDebug("Event handled: {EventId}, PID: {ProcessId}, ProcessName: {ProcessName}",
-                eventId, processId, detectedProcessName);
-        });
-    }
+        if (e.EventRecord == null) return;
 
-    private async Task HandleEventRecordWrittenAsync(EventRecordWrittenEventArgs e)
-    {
         try
         {
-            await EventWatcherOnEventRecordWrittenAsync(e);
+            var eventId = e.EventRecord.Id;
+            var processId = ExtractProcessId(e.EventRecord);
+
+            if (processId == null)
+            {
+                _logger.LogWarning("Failed to extract process ID from event record.");
+                return;
+            }
+
+            _logger.LogInformation("Detected process event: EventId={EventId}, ProcessId={ProcessId}", eventId,
+                processId);
+            ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(eventId, processId.Value));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while processing the event.");
+            _logger.LogError(ex, "Error processing event record.");
+        }
+    }
+
+    private int? ExtractProcessId(EventRecord eventRecord)
+    {
+        try
+        {
+            return (int?)eventRecord.Properties[1].Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting process ID from event record.");
+            return null;
         }
     }
 }

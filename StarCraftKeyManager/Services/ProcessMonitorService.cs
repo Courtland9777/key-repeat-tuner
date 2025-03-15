@@ -18,6 +18,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
     private bool _isRunning;
     private KeyRepeatSettings _keyRepeatSettings;
     private string _processName;
+    private CancellationToken _stoppingToken;
 
     public ProcessMonitorService(
         ILogger<ProcessMonitorService> logger,
@@ -46,6 +47,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _stoppingToken = stoppingToken;
         _logger.LogInformation("Starting process monitor service.");
         _processEventWatcher.Start();
 
@@ -69,6 +71,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         {
             _logger.LogInformation("Stopping process monitor service.");
             _processEventWatcher.Stop();
+            _processEventWatcher.ProcessEventOccurred -= OnProcessEventOccurred;
         }
     }
 
@@ -96,6 +99,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         if (!stateChanged) return;
         _logger.LogInformation("Process running state changed to {IsRunning}. Updating key repeat settings...",
             _isRunning);
+
         _ = Task.Run(() =>
         {
             try
@@ -106,30 +110,41 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
             {
                 _logger.LogError(ex, "Failed to apply key repeat settings");
             }
-        });
+        }, _stoppingToken);
     }
 
     private void ApplyKeyRepeatSettings()
     {
         var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
         _logger.LogInformation("Applying key repeat settings: {@Settings}", settings);
-        SetKeyboardRepeat(settings.RepeatSpeed, settings.RepeatDelay);
+        try
+        {
+            SetKeyboardRepeat(settings.RepeatSpeed, settings.RepeatDelay);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply key repeat settings. Continuing without changes.");
+        }
     }
 
     private void SetKeyboardRepeat(int repeatSpeed, int repeatDelay)
     {
-        // ReSharper disable once InconsistentNaming
         const uint SPI_SETKEYBOARDSPEED = 0x000B;
-        // ReSharper disable once InconsistentNaming
         const uint SPI_SETKEYBOARDDELAY = 0x0017;
+        try
+        {
+            if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDSPEED, (uint)repeatSpeed, 0, 0))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat speed.");
 
-        if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDSPEED, (uint)repeatSpeed, 0, 0))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat speed.");
+            if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDDELAY, (uint)repeatDelay / 250, 0, 0))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat delay.");
 
-        if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDDELAY, (uint)repeatDelay / 250, 0, 0))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat delay.");
-
-        _logger.LogInformation("Key repeat settings successfully applied: Speed={Speed}, Delay={Delay}", repeatSpeed,
-            repeatDelay);
+            _logger.LogInformation("Key repeat settings successfully applied: Speed={Speed}, Delay={Delay}",
+                repeatSpeed, repeatDelay);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply key repeat settings. Continuing without changes.");
+        }
     }
 }

@@ -2,7 +2,7 @@
 
 public class ProcessEventArgs : EventArgs
 {
-    public ProcessEventArgs(int eventId, int processId, string processName)
+    public ProcessEventArgs(int eventId, int processId, string processName = "Unknown")
     {
         EventId = eventId;
         ProcessId = processId;
