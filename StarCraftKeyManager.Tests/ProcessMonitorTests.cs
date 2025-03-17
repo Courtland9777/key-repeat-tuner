@@ -38,7 +38,7 @@ public class ProcessMonitorTests
         var cts = new CancellationTokenSource();
 
         var task = service.StartAsync(cts.Token);
-        cts.Cancel();
+        await cts.CancelAsync();
         await task;
 
         _mockLogger.Verify(log => log.LogInformation("Process monitor service cancellation requested."), Times.Once);
