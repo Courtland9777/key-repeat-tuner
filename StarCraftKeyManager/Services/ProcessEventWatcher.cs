@@ -1,57 +1,60 @@
 ﻿using System.Diagnostics.Eventing.Reader;
+using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Services;
 
-internal sealed class ProcessEventWatcher : IProcessEventWatcher, IDisposable
+internal sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly ILogger<ProcessEventWatcher> _logger;
+    private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
+    private EventHandler<EventRecordWrittenEventArgs>? _eventHandler;
     private EventLogWatcher? _eventWatcher;
-    private string _processName = string.Empty;
+    private bool _isStarted;
 
-    public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger)
+    public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger, IOptionsMonitor<AppSettings> optionsMonitor)
     {
         _logger = logger;
+        _optionsMonitor = optionsMonitor;
     }
 
     public event EventHandler<ProcessEventArgs>? ProcessEventOccurred;
 
     public void Configure(string processName)
     {
-        _processName = processName.Replace(".exe", string.Empty, StringComparison.OrdinalIgnoreCase);
+        const string query =
+            "<QueryList><Query Id='0' Path='Security'><Select Path='Security'>*[System[(EventID=4688 or EventID=4689)]]</Select></Query></QueryList>";
+        var eventQuery = new EventLogQuery("Security", PathType.LogName, query)
+        {
+            ReverseDirection = true
+        };
+        _eventWatcher = new EventLogWatcher(eventQuery);
+        _eventHandler = EventWatcherOnEventRecordWritten;
     }
 
     public void Start()
     {
-        var query = $@"
-        <QueryList>
-            <Query Id='0' Path='Security'>
-                <Select Path='Security'>
-                    *[System[(EventID=4688 or EventID=4689)]]
-                    and *[EventData[Data[@Name='NewProcessName'] and (contains(.,'{_processName}'))]]
-                </Select>
-            </Query>
-        </QueryList>";
+        if (_isStarted || _eventWatcher == null) return;
 
-        var eventQuery = new EventLogQuery("Security", PathType.LogName, query);
-        _eventWatcher = new EventLogWatcher(eventQuery);
-        _eventWatcher.EventRecordWritten += EventWatcherOnEventRecordWritten;
+        _eventWatcher.EventRecordWritten += _eventHandler;
         _eventWatcher.Enabled = true;
+        _isStarted = true;
 
-        _logger.LogInformation("Process event watcher started for '{ProcessName}'.", _processName);
+        _logger.LogInformation("Process event watcher started.");
     }
 
     public void Stop()
     {
-        if (_eventWatcher != null)
-        {
-            _eventWatcher.EventRecordWritten -= EventWatcherOnEventRecordWritten;
-            _eventWatcher.Dispose();
-            _eventWatcher = null;
-        }
+        if (!_isStarted || _eventWatcher == null) return;
 
-        _logger.LogInformation("Process event watcher stopped for '{ProcessName}'.", _processName);
+        _eventWatcher.Enabled = false;
+        _eventWatcher.EventRecordWritten -= _eventHandler;
+        _eventWatcher.Dispose();
+        _eventWatcher = null;
+        _isStarted = false;
+
+        _logger.LogInformation("Process event watcher stopped.");
     }
 
     public void Dispose()
@@ -61,26 +64,41 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher, IDisposable
 
     private void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
     {
-        if (e.EventRecord == null || e.EventRecord.Properties.Count == 0)
-            return;
+        if (e.EventRecord == null) return;
 
-        var eventId = e.EventRecord.Id;
-        var processId = eventId == 4688
-            ? e.EventRecord.Properties[4].Value as int?
-            : e.EventRecord.Properties[3].Value as int?;
+        try
+        {
+            var eventId = e.EventRecord.Id;
+            var processId = ExtractProcessId(e.EventRecord);
 
-        var processPath = e.EventRecord.Properties.Count > 5
-            ? e.EventRecord.Properties[5].Value as string ?? string.Empty
-            : string.Empty;
+            if (processId == null)
+            {
+                _logger.LogWarning("Failed to extract process ID from event record.");
+                return;
+            }
 
-        var detectedProcessName = Path.GetFileNameWithoutExtension(processPath);
+            _logger.LogInformation("Detected process event: EventId={EventId}, ProcessId={ProcessId}", eventId,
+                processId);
+            ProcessEventOccurred?.Invoke(this,
+                new ProcessEventArgs(eventId, processId.Value,
+                    _optionsMonitor.CurrentValue.ProcessMonitor.ProcessName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing event record.");
+        }
+    }
 
-        if (!string.Equals(detectedProcessName, _processName, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        if (!processId.HasValue) return;
-        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(eventId, processId.Value, detectedProcessName));
-        _logger.LogDebug("Event handled: {EventId}, PID: {ProcessId}, ProcessName: '{ProcessName}'",
-            eventId, processId, detectedProcessName);
+    private int? ExtractProcessId(EventRecord eventRecord)
+    {
+        try
+        {
+            return (int?)eventRecord.Properties[1].Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting process ID from event record.");
+            return null;
+        }
     }
 }

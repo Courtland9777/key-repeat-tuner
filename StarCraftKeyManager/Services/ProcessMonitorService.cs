@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
@@ -8,14 +9,16 @@ using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Services;
 
-internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitorService
+internal sealed class ProcessMonitorService : BackgroundService
 {
     private readonly ILogger<ProcessMonitorService> _logger;
     private readonly IProcessEventWatcher _processEventWatcher;
-    private readonly HashSet<int> _trackedProcesses = [];
+    private readonly object _processLock = new();
+    private readonly ConcurrentDictionary<int, bool> _trackedProcesses = new();
     private bool _isRunning;
     private KeyRepeatSettings _keyRepeatSettings;
     private string _processName;
+    private CancellationToken _stoppingToken;
 
     public ProcessMonitorService(
         ILogger<ProcessMonitorService> logger,
@@ -44,17 +47,21 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _stoppingToken = stoppingToken;
         _logger.LogInformation("Starting process monitor service.");
-
         _processEventWatcher.Start();
 
-        UpdateInitialProcessState();
+        var sanitizedProcessName = _processName.Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
+        var initialProcesses = await Task.Run(() => Process.GetProcessesByName(sanitizedProcessName), stoppingToken);
+        foreach (var process in initialProcesses) _trackedProcesses.TryAdd(process.Id, true);
+
+        _isRunning = !_trackedProcesses.IsEmpty;
+        _logger.LogInformation("Initial tracked processes: {Count}", _trackedProcesses.Count);
         ApplyKeyRepeatSettings();
 
         try
         {
-            while (!stoppingToken.IsCancellationRequested)
-                await Task.Delay(Timeout.Infinite, stoppingToken);
+            await Task.Delay(Timeout.Infinite, stoppingToken);
         }
         catch (TaskCanceledException)
         {
@@ -64,65 +71,80 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         {
             _logger.LogInformation("Stopping process monitor service.");
             _processEventWatcher.Stop();
+            _processEventWatcher.ProcessEventOccurred -= OnProcessEventOccurred;
         }
-    }
-
-    private void UpdateInitialProcessState()
-    {
-        var sanitizedProcessName = _processName.Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
-        var initialProcesses = Process.GetProcessesByName(sanitizedProcessName);
-
-        foreach (var process in initialProcesses)
-            _trackedProcesses.Add(process.Id);
-
-        _logger.LogInformation("Initial tracked processes: {Count}", _trackedProcesses.Count);
-        _isRunning = _trackedProcesses.Count > 0;
     }
 
     private void OnProcessEventOccurred(object? sender, ProcessEventArgs e)
     {
-        _logger.LogInformation("Process event occurred: {EventId} for PID {ProcessId}", e.EventId, e.ProcessId);
-
-        switch (e.EventId)
+        bool stateChanged;
+        lock (_processLock)
         {
-            case 4688:
-                _trackedProcesses.Add(e.ProcessId);
-                break;
-            case 4689:
-                _trackedProcesses.Remove(e.ProcessId);
-                break;
+            switch (e.EventId)
+            {
+                case 4688:
+                    _trackedProcesses.TryAdd(e.ProcessId, true);
+                    break;
+                case 4689:
+                    _trackedProcesses.TryRemove(e.ProcessId, out _);
+                    break;
+            }
+
+            var wasRunning = _isRunning;
+            _isRunning = !_trackedProcesses.IsEmpty;
+            stateChanged = wasRunning != _isRunning;
         }
 
-        var isRunningNow = _trackedProcesses.Count > 0;
+        _logger.LogInformation("Process event occurred: {EventId} for PID {ProcessId}", e.EventId, e.ProcessId);
+        if (!stateChanged) return;
+        _logger.LogInformation("Process running state changed to {IsRunning}. Updating key repeat settings...",
+            _isRunning);
 
-        if (_isRunning == isRunningNow) return;
-        _isRunning = isRunningNow;
-        ApplyKeyRepeatSettings();
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                ApplyKeyRepeatSettings();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to apply key repeat settings");
+            }
+        }, _stoppingToken);
     }
 
     private void ApplyKeyRepeatSettings()
     {
-        var settings = _isRunning
-            ? _keyRepeatSettings.FastMode
-            : _keyRepeatSettings.Default;
-
+        var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
         _logger.LogInformation("Applying key repeat settings: {@Settings}", settings);
-
-        SetKeyboardRepeat(settings.RepeatSpeed, settings.RepeatDelay);
+        try
+        {
+            SetKeyboardRepeat(settings.RepeatSpeed, settings.RepeatDelay);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply key repeat settings. Continuing without changes.");
+        }
     }
 
     private void SetKeyboardRepeat(int repeatSpeed, int repeatDelay)
     {
         const uint SPI_SETKEYBOARDSPEED = 0x000B;
         const uint SPI_SETKEYBOARDDELAY = 0x0017;
+        try
+        {
+            if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDSPEED, (uint)repeatSpeed, 0, 0))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat speed.");
 
-        if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDSPEED, (uint)repeatSpeed, 0, 0))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat speed.");
+            if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDDELAY, (uint)repeatDelay / 250, 0, 0))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat delay.");
 
-        if (!NativeMethods.SystemParametersInfo(SPI_SETKEYBOARDDELAY, (uint)repeatDelay / 250, 0, 0))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat delay.");
-
-        _logger.LogInformation("Key repeat settings successfully applied: Speed={Speed}, Delay={Delay}",
-            repeatSpeed, repeatDelay);
+            _logger.LogInformation("Key repeat settings successfully applied: Speed={Speed}, Delay={Delay}",
+                repeatSpeed, repeatDelay);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply key repeat settings. Continuing without changes.");
+        }
     }
 }

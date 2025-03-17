@@ -31,7 +31,6 @@ public static class ConfigurationHelpers
 
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
-        // Load and validate configuration
         var appSettings = builder.Configuration.Get<AppSettings>() ?? new AppSettings();
         var validator = new AppSettingsValidator();
         var validationResults = validator.Validate(appSettings);
@@ -49,15 +48,18 @@ public static class ConfigurationHelpers
 
     private static void LogValidationErrors(ValidationResult validationResults)
     {
-        foreach (var failure in validationResults.Errors)
-            Log.Warning("Invalid configuration: {PropertyName} - {ErrorMessage}",
-                failure.PropertyName, failure.ErrorMessage);
+        Parallel.ForEach(validationResults.Errors,
+            failure =>
+            {
+                Log.Warning("Invalid configuration: {PropertyName} - {ErrorMessage}", failure.PropertyName,
+                    failure.ErrorMessage);
+            });
     }
 
     private static void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<AppSettings>(configuration);
-        services.AddSingleton<IProcessMonitorService, ProcessMonitorService>();
+        services.AddSingleton<ProcessMonitorService>();
         services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
     }
