@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.Eventing.Reader;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
@@ -11,13 +12,21 @@ public class ProcessEventWatcherTests
 {
     private readonly List<ProcessEventArgs> _capturedEvents;
     private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger;
+    private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptionsMonitor;
     private readonly ProcessEventWatcher _processEventWatcher;
 
     public ProcessEventWatcherTests()
     {
         _mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
+        _mockOptionsMonitor = new Mock<IOptionsMonitor<AppSettings>>();
+        // Set up default AppSettings
+        var appSettings = new AppSettings
+        {
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "testProcess.exe" }
+        };
+        _mockOptionsMonitor.Setup(m => m.CurrentValue).Returns(appSettings);
         _capturedEvents = [];
-        _processEventWatcher = new ProcessEventWatcher(_mockLogger.Object);
+        _processEventWatcher = new ProcessEventWatcher(_mockLogger.Object, _mockOptionsMonitor.Object);
         _processEventWatcher.ProcessEventOccurred += (_, args) => _capturedEvents.Add(args);
     }
 

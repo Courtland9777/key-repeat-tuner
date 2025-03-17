@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.Eventing.Reader;
+using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 
@@ -7,13 +8,15 @@ namespace StarCraftKeyManager.Services;
 internal sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly ILogger<ProcessEventWatcher> _logger;
+    private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
     private EventHandler<EventRecordWrittenEventArgs>? _eventHandler;
     private EventLogWatcher? _eventWatcher;
     private bool _isStarted;
 
-    public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger)
+    public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger, IOptionsMonitor<AppSettings> optionsMonitor)
     {
         _logger = logger;
+        _optionsMonitor = optionsMonitor;
     }
 
     public event EventHandler<ProcessEventArgs>? ProcessEventOccurred;
@@ -76,7 +79,9 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
 
             _logger.LogInformation("Detected process event: EventId={EventId}, ProcessId={ProcessId}", eventId,
                 processId);
-            ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(eventId, processId.Value));
+            ProcessEventOccurred?.Invoke(this,
+                new ProcessEventArgs(eventId, processId.Value,
+                    _optionsMonitor.CurrentValue.ProcessMonitor.ProcessName));
         }
         catch (Exception ex)
         {
