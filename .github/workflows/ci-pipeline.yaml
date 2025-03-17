@@ -19,8 +19,8 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Setup .NET with Retry
-      uses: nick-fields/retry@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
       with:
         timeout_minutes: 2
         max_attempts: 3

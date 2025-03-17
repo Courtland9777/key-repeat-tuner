@@ -142,3 +142,6 @@ dist/
 docker-compose.override.yml
 **/Dockerfile
 **/.dockerignore
+
+/bin/
+/obj/

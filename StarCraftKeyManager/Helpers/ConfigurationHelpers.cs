@@ -12,7 +12,7 @@ public static class ConfigurationHelpers
 {
     public static void AddAppSettingsJson(this IHostApplicationBuilder builder)
     {
-        builder.Configuration.AddJsonFile("appsettings.json", true, true);
+        builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
     }
 
     public static void SetServiceName(this IHostApplicationBuilder builder)
