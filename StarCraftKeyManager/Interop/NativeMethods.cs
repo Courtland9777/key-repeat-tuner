@@ -8,5 +8,6 @@ internal static partial class NativeMethods
 
     [LibraryImport(User32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
+    [SuppressGCTransition]
     public static partial bool SystemParametersInfo(uint action, uint param, uint vparam, uint init);
 }

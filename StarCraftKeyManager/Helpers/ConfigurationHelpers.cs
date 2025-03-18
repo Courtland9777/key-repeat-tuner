@@ -1,5 +1,7 @@
 ﻿using System.Security.Principal;
+using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.Extensions.Options;
 using Serilog;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
@@ -31,8 +33,12 @@ public static class ConfigurationHelpers
 
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
-        var appSettings = builder.Configuration.Get<AppSettings>() ?? new AppSettings();
-        var validator = new AppSettingsValidator();
+        builder.Services.AddValidatorsFromAssemblyContaining<AppSettingsValidator>();
+
+        // Validate configuration
+        using var serviceProvider = builder.Services.BuildServiceProvider();
+        var appSettings = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
+        var validator = serviceProvider.GetRequiredService<IValidator<AppSettings>>();
         var validationResults = validator.Validate(appSettings);
 
         if (!validationResults.IsValid)
@@ -48,17 +54,14 @@ public static class ConfigurationHelpers
 
     private static void LogValidationErrors(ValidationResult validationResults)
     {
-        Parallel.ForEach(validationResults.Errors,
-            failure =>
-            {
-                Log.Warning("Invalid configuration: {PropertyName} - {ErrorMessage}", failure.PropertyName,
-                    failure.ErrorMessage);
-            });
+        foreach (var failure in validationResults.Errors)
+            Log.Warning("Invalid configuration: {PropertyName} - {ErrorMessage}",
+                failure.PropertyName, failure.ErrorMessage);
     }
 
     private static void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<AppSettings>(configuration);
+        services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings)));
         services.AddSingleton<ProcessMonitorService>();
         services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();

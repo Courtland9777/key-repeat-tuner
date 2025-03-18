@@ -1,7 +1,8 @@
-
 # Build artifacts
 bin/
 obj/
+/bin/
+/obj/
 
 # User-specific files
 *.user
@@ -143,5 +144,4 @@ docker-compose.override.yml
 **/Dockerfile
 **/.dockerignore
 
-/bin/
-/obj/
+/.gptignore
