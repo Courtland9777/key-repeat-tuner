@@ -22,7 +22,21 @@ public class ProcessEventWatcherTests
         // Set up default AppSettings
         var appSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "testProcess.exe" }
+            ProcessMonitor = new ProcessMonitorSettings
+            {
+                ProcessName = "testProcess.exe"
+            },
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState
+                {
+                    RepeatSpeed = 31, RepeatDelay = 1000
+                },
+                FastMode = new KeyRepeatState
+                {
+                    RepeatSpeed = 20, RepeatDelay = 500
+                }
+            }
         };
         _mockOptionsMonitor.Setup(m => m.CurrentValue).Returns(appSettings);
         _capturedEvents = [];
