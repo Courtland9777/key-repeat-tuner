@@ -99,7 +99,7 @@ internal sealed class ProcessMonitorService : BackgroundService
         ApplyKeyRepeatSettings();
     }
 
-    private void ApplyKeyRepeatSettings()
+    internal void ApplyKeyRepeatSettings()
     {
         var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
         _logger.LogInformation("Applying key repeat settings: {@Settings}", settings);

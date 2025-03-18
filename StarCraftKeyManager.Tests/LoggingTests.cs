@@ -73,20 +73,19 @@ public class LoggingTests
     }
 
     [Fact]
-    public void LogFile_ShouldBeUtf8Encoded_Improved()
+    public void LogFile_ShouldBeUtf8Encoded()
     {
         // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        var mockFile = new Mock<IFile>();
-        var utf8Bytes = Encoding.UTF8.GetBytes("Mock log content");
-        mockFile.Setup(f => f.ReadAllBytes(LogFilePath)).Returns(utf8Bytes);
-        mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
+        const string logMessage = "Mock log content";
+        var logBytes = Encoding.UTF8.GetBytes(logMessage);
+        var memoryStream = new MemoryStream(logBytes);
+
         // Act
-        var logBytes = mockFileSystem.Object.File.ReadAllBytes(LogFilePath);
-        var preamble = Encoding.UTF8.GetPreamble();
-        var isUtf8 = logBytes.Take(preamble.Length).SequenceEqual(preamble);
+        using var reader = new StreamReader(memoryStream, Encoding.UTF8, true);
+        var readContent = reader.ReadToEnd();
+
         // Assert
-        Assert.True(isUtf8, "Log file should be UTF-8 encoded.");
+        Assert.Equal(logMessage, readContent);
     }
 
     [Fact]

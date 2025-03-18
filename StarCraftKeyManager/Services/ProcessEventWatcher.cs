@@ -62,7 +62,7 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         Stop();
     }
 
-    private void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
+    internal void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
     {
         if (e.EventRecord == null) return;
 

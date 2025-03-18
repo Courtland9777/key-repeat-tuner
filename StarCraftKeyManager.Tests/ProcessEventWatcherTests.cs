@@ -114,14 +114,13 @@ public class ProcessEventWatcherTests
     }
 
     [Fact]
-    public async Task EventWatcherOnEventRecordWrittenAsync_WithNullEventRecord_ShouldNotThrow()
+    public void ProcessEventWatcher_ShouldHandleNullEventRecord()
     {
-        // Arrange
         var mockEventArgs = new Mock<EventRecordWrittenEventArgs>();
         mockEventArgs.Setup(e => e.EventRecord).Returns((EventRecord?)null!);
-        // Act & Assert
-        await InvokePrivateMethodAsync(_processEventWatcher, "EventWatcherOnEventRecordWrittenAsync",
-            mockEventArgs.Object);
+
+        _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEventArgs.Object);
+
         Assert.Empty(_capturedEvents);
     }
 

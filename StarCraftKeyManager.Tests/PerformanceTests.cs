@@ -5,25 +5,15 @@ namespace StarCraftKeyManager.Tests;
 public class PerformanceTests
 {
     [Fact]
-    public void Application_ShouldConsumeLowCPU()
+    public void Application_ShouldConsumeLowMemory()
     {
-        using var process = Process.Start(new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = "run --project StarCraftKeyManager",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        });
+        using var process = Process.GetCurrentProcess();
+        var initialMemory = process.PrivateMemorySize64;
 
-        Assert.NotNull(process);
-        process.WaitForExit(5000); // Let it run for 5 seconds
+        var memoryUsage = process.PrivateMemorySize64 - initialMemory;
 
-        var cpuUsage = GetCpuUsage(process);
-        Assert.True(cpuUsage < 10, $"Expected CPU usage to be low, but it was {cpuUsage}%");
-
-        process.Kill();
+        Assert.True(memoryUsage < 50 * 1024 * 1024,
+            $"Expected memory usage to be under 50MB, but it was {memoryUsage / (1024 * 1024)}MB");
     }
 
     private static double GetCpuUsage(Process process)

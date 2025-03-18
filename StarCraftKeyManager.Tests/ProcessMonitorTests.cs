@@ -209,18 +209,20 @@ public class ProcessMonitorTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldApplyKeyRepeatSettings_OnStart()
+    public void ProcessMonitor_ShouldApplyKeyRepeatSettings_WhenProcessStarts()
     {
         // Arrange
-        var service = new ProcessMonitorService(_mockLogger.Object, _mockOptionsMonitor.Object,
-            _mockProcessEventWatcher.Object);
-        var cts = new CancellationTokenSource();
-        // Act
-        await service.StartAsync(cts.Token);
+        var mockMonitorService = new Mock<ProcessMonitorService>(
+            _mockLogger.Object, _mockOptionsMonitor.Object, _mockProcessEventWatcher.Object
+        );
+
+        _mockProcessEventWatcher.Raise(
+            m => m.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "notepad.exe")
+        );
+
         // Assert
-        _mockLogger.Verify(
-            log => log.LogInformation("Applying KeyRepeat settings: Speed={Speed}, Delay={Delay}", 31, 1000),
-            Times.Once);
+        mockMonitorService.Verify(m => m.ApplyKeyRepeatSettings(), Times.Once);
     }
 
     [Fact]
