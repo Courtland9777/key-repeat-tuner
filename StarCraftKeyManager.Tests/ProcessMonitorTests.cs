@@ -16,7 +16,7 @@ public class ProcessMonitorTests
     public ProcessMonitorTests()
     {
         _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
-        var mockOptionsMonitor = new Mock<IOptionsMonitor<AppSettings>>();
+        Mock<IOptionsMonitor<AppSettings>> mockOptionsMonitor = new();
         _mockProcessEventWatcher = new Mock<IProcessEventWatcher>();
 
         // Mock AppSettings
@@ -40,11 +40,11 @@ public class ProcessMonitorTests
     }
 
     [Fact]
-    public void ProcessMonitor_ShouldStartAndStopWithoutErrors()
+    public async Task ProcessMonitor_ShouldStartAndStopWithoutErrors()
     {
         // Act
-        _processMonitorService.StartAsync(CancellationToken.None);
-        _processMonitorService.StopAsync(CancellationToken.None);
+        await _processMonitorService.StartAsync(CancellationToken.None);
+        await _processMonitorService.StopAsync(CancellationToken.None);
 
         // Assert
         _mockLogger.VerifyNoOtherCalls(); // Ensure no unexpected logs
@@ -61,7 +61,7 @@ public class ProcessMonitorTests
 
         // Act
         await _processMonitorService.StartAsync(CancellationToken.None);
-        await tcs.Task;
+        await tcs.Task; // ✅ Ensures process event is fully handled
 
         // Assert
         _mockLogger.Verify(
@@ -159,6 +159,30 @@ public class ProcessMonitorTests
             ),
             Times.Never,
             "Expected no key repeat settings change when process name does not match."
+        );
+    }
+
+    [Fact]
+    public async Task ProcessMonitor_ShouldRestoreDefaultSettings_WhenProcessExits()
+    {
+        _mockProcessEventWatcher
+            .Setup(w => w.Start())
+            .Callback(() => _mockProcessEventWatcher.Raise(
+                w => w.ProcessEventOccurred += null,
+                new ProcessEventArgs(4689, 1234, "starcraft.exe") // Exit event
+            ));
+
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        _mockLogger.Verify(
+            log => log.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<object>(msg => msg.ToString()!.Contains("Restoring default key repeat settings")),
+                null,
+                It.IsAny<Func<object, Exception?, string>>()
+            ),
+            Times.AtLeastOnce
         );
     }
 }

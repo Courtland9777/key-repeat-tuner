@@ -29,12 +29,67 @@ public class LoggingTests
         _logger.Information(message);
 
         // Assert
-        var collection = _sink.LogEvents as LogEvent[] ?? [.. _sink.LogEvents];
-
-        Assert.Single(collection);
-        Assert.Contains(collection, e => e.MessageTemplate.Text.Contains(message));
+        var logEvents = _sink.LogEvents.ToList();
+        Assert.Single(logEvents);
+        Assert.Contains(logEvents, e => e.MessageTemplate.Text.Contains(message));
     }
 
+    [Fact]
+    public void Logger_ShouldFormatStructuredLogsCorrectly()
+    {
+        // Arrange
+        const string testUser = "TestUser";
+
+        // Act
+        _logger.Information("User {User} performed an action", testUser);
+
+        // Assert
+        var logEvent = _sink.LogEvents.FirstOrDefault();
+        Assert.NotNull(logEvent);
+        Assert.Contains("User TestUser performed an action", logEvent.RenderMessage());
+        Assert.True(logEvent.Timestamp != default, "Expected log entry to contain a timestamp.");
+    }
+
+    [Fact]
+    public async Task Logger_ShouldHandleConcurrentWrites()
+    {
+        // Arrange
+        var messages = new[] { "Message 1", "Message 2", "Message 3", "Message 4", "Message 5" };
+
+        // Act
+        await Task.WhenAll(messages.Select(msg => Task.Run(() => _logger.Information(msg))));
+
+        // Assert
+        var logEvents = _sink.LogEvents.ToList();
+        Assert.Equal(messages.Length, logEvents.Count);
+        foreach (var msg in messages) Assert.Contains(logEvents, e => e.MessageTemplate.Text.Contains(msg));
+    }
+
+    [Fact]
+    public void Logger_ShouldWriteWarningLogs()
+    {
+        // Act
+        _logger.Warning("This is a warning message");
+
+        // Assert
+        Assert.Contains(_sink.LogEvents, e => e.Level == LogEventLevel.Warning);
+    }
+
+    [Fact]
+    public void Logger_ShouldWriteErrorsWithExceptions()
+    {
+        // Arrange
+        var exception = new InvalidOperationException("Test exception");
+
+        // Act
+        _logger.Error(exception, "An error occurred");
+
+        // Assert
+        var logEvent = _sink.LogEvents.FirstOrDefault(e => e.Level == LogEventLevel.Error);
+        Assert.NotNull(logEvent);
+        Assert.Contains("An error occurred", logEvent.RenderMessage());
+        Assert.Contains("Test exception", logEvent.Exception?.Message);
+    }
 
     [Fact]
     public void LogFile_ShouldBeUtf8Encoded()
@@ -56,51 +111,5 @@ public class LoggingTests
         var fileContent = Encoding.UTF8.GetString(fileBytes);
 
         Assert.Contains(logMessage, fileContent);
-    }
-
-    [Fact]
-    public async Task Logger_ShouldHandleConcurrentWrites()
-    {
-        // Arrange
-        var logFilePath = Path.Combine(Path.GetTempPath(), "concurrent_log.txt");
-        var logger = new LoggerConfiguration()
-            .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
-            .CreateLogger();
-
-        var messages = new[] { "Message 1", "Message 2", "Message 3", "Message 4", "Message 5" };
-
-        // Act
-        await Task.Run(() => { Parallel.ForEach(messages, message => { logger.Information(message); }); });
-
-        await logger.DisposeAsync();
-
-        // Assert
-        var logContent = await File.ReadAllTextAsync(logFilePath);
-        foreach (var message in messages) Assert.Contains(message, logContent);
-    }
-
-    [Fact]
-    public void Logger_ShouldFormatMessagesCorrectly()
-    {
-        // Arrange
-        const string testUser = "TestUser";
-
-        // Act
-        _logger.Information("User {User} logged in", testUser);
-
-        // Assert
-        var logEvent = _sink.LogEvents.FirstOrDefault(); // ✅ Use FirstOrDefault()
-        Assert.NotNull(logEvent);
-        Assert.Contains($"User {testUser} logged in", logEvent.RenderMessage());
-    }
-
-    [Fact]
-    public void Logger_ShouldWriteWarningLogs()
-    {
-        // Act
-        _logger.Warning("This is a warning message");
-
-        // Assert
-        Assert.Contains(_sink.LogEvents, e => e.Level == LogEventLevel.Warning);
     }
 }

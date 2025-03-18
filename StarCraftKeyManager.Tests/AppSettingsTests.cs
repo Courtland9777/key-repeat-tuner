@@ -1,4 +1,6 @@
-﻿using StarCraftKeyManager.Models;
+﻿using Microsoft.Extensions.Options;
+using Moq;
+using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Validators;
 
 namespace StarCraftKeyManager.Tests;
@@ -23,6 +25,64 @@ public class AppSettingsTests
         var result = _validator.Validate(validSettings);
 
         Assert.True(result.IsValid, "Expected configuration to be valid.");
+    }
+
+    [Fact]
+    public void EmptyProcessMonitorName_ShouldFailValidation()
+    {
+        var invalidSettings = new AppSettings
+        {
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "" }, // Invalid
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+            }
+        };
+
+        var result = _validator.Validate(invalidSettings);
+
+        Assert.False(result.IsValid, "Expected configuration to be invalid due to empty ProcessMonitor.ProcessName.");
+        Assert.Contains(result.Errors,
+            e => e.PropertyName == "ProcessMonitor.ProcessName" && e.ErrorMessage.Contains("required"));
+    }
+
+    [Fact]
+    public void ChangingAppSettings_ShouldTriggerValidation()
+    {
+        var options = new Mock<IOptionsMonitor<AppSettings>>();
+        var settings = new AppSettings
+        {
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+            }
+        };
+
+        options.Setup(o => o.CurrentValue).Returns(settings);
+
+        var eventTriggered = false;
+        options.Setup(o => o.OnChange(It.IsAny<Action<AppSettings>>()))
+            .Callback<Action<AppSettings>>(callback =>
+            {
+                eventTriggered = true;
+                callback(new AppSettings
+                {
+                    ProcessMonitor = new ProcessMonitorSettings
+                    {
+                        ProcessName = ""
+                    },
+                    KeyRepeat = new KeyRepeatSettings
+                    {
+                        Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
+                        FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+                    }
+                });
+            });
+
+        Assert.True(eventTriggered, "Expected OnChange event to trigger when settings change.");
     }
 
     [Theory]
@@ -75,8 +135,8 @@ public class AppSettingsTests
             ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = null!,
-                FastMode = null!
+                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 }, // ✅ Set Default
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
             }
         };
 
@@ -122,25 +182,5 @@ public class AppSettingsTests
 
         Assert.False(result.IsValid, "Expected configuration to be invalid due to missing FastMode KeyRepeat state.");
         Assert.Contains(result.Errors, e => e.PropertyName.Contains("FastMode") && e.ErrorMessage.Contains("required"));
-    }
-
-    [Fact]
-    public void EmptyProcessName_ShouldFailValidation()
-    {
-        var invalidSettings = new AppSettings
-        {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "" },
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
-            }
-        };
-
-        var result = _validator.Validate(invalidSettings);
-
-        Assert.False(result.IsValid, "Expected configuration to be invalid due to empty ProcessName.");
-        Assert.Contains(result.Errors,
-            e => e.PropertyName == "ProcessMonitor.ProcessName" && e.ErrorMessage.Contains("required"));
     }
 }

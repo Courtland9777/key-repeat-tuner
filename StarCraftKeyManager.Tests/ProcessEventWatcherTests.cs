@@ -6,25 +6,24 @@ using Moq;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 
-// ✅ Corrected namespace for Event Data Model
-
 namespace StarCraftKeyManager.Tests;
 
 public class ProcessEventWatcherTests
 {
     private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger;
-    private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptionsMonitor;
     private readonly ProcessEventWatcher _processEventWatcher;
 
     public ProcessEventWatcherTests()
     {
         _mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
-        _mockOptionsMonitor = new Mock<IOptionsMonitor<AppSettings>>();
+        Mock<IOptionsMonitor<AppSettings>> mockOptionsMonitor = new();
 
-        // Mock AppSettings
         var mockAppSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessMonitor = new ProcessMonitorSettings
+            {
+                ProcessName = "starcraft.exe"
+            },
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -32,9 +31,8 @@ public class ProcessEventWatcherTests
             }
         };
 
-        _mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockAppSettings);
-
-        _processEventWatcher = new ProcessEventWatcher(_mockLogger.Object, _mockOptionsMonitor.Object);
+        mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockAppSettings);
+        _processEventWatcher = new ProcessEventWatcher(_mockLogger.Object, mockOptionsMonitor.Object);
     }
 
     [Fact]
@@ -110,7 +108,7 @@ public class ProcessEventWatcherTests
     }
 
     [Fact]
-    public void ProcessEventWatcher_ShouldProcessMultipleEvents_Correctly()
+    public async Task ProcessEventWatcher_ShouldProcessMultipleEvents_Correctly()
     {
         // Arrange
         var eventCount = 0;
@@ -126,7 +124,11 @@ public class ProcessEventWatcherTests
         };
 
         // Act
-        foreach (var mockEvent in mockEvents) _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEvent);
+        await Task.Run(() =>
+        {
+            foreach (var mockEvent in mockEvents)
+                _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEvent);
+        });
 
         // Assert
         Assert.Equal(5, eventCount);
@@ -176,13 +178,12 @@ public class ProcessEventWatcherTests
 
     private static EventProperty CreateEventProperty(object value)
     {
-        var eventProperty = (EventProperty)Activator.CreateInstance(
+        return (EventProperty)Activator.CreateInstance(
             typeof(EventProperty),
             BindingFlags.NonPublic | BindingFlags.Instance,
             null,
             [value],
-            null)!;
-
-        return eventProperty;
+            null
+        )!;
     }
 }
