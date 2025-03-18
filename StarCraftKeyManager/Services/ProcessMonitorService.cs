@@ -127,4 +127,9 @@ internal sealed class ProcessMonitorService : BackgroundService
             _logger.LogError(ex, "Failed to apply key repeat settings.");
         }
     }
+
+    public async Task StartMonitoringAsync(CancellationToken cancellationToken = default)
+    {
+        await ExecuteAsync(cancellationToken);
+    }
 }

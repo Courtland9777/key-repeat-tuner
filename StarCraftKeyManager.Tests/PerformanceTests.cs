@@ -1,23 +1,65 @@
 ﻿using System.Diagnostics;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+using StarCraftKeyManager.Services;
 
 namespace StarCraftKeyManager.Tests;
 
 public class PerformanceTests
 {
     [Fact]
-    public void Application_ShouldConsumeLowMemory()
+    public async Task ProcessMonitor_ShouldConsumeMinimalCPU()
     {
+        // Arrange
         using var process = Process.GetCurrentProcess();
-        var initialMemory = process.PrivateMemorySize64;
+        var initialCpuUsage = GetCpuUsage();
 
-        var memoryUsage = process.PrivateMemorySize64 - initialMemory;
+        // Act
+        await Task.Delay(500); // Simulate workload
+        var finalCpuUsage = GetCpuUsage();
 
-        Assert.True(memoryUsage < 50 * 1024 * 1024,
-            $"Expected memory usage to be under 50MB, but it was {memoryUsage / (1024 * 1024)}MB");
+        // Assert
+        Assert.True(finalCpuUsage - initialCpuUsage < 5.0,
+            $"Expected CPU usage increase to be under 5%, but it was {finalCpuUsage - initialCpuUsage}%");
     }
 
-    private static double GetCpuUsage(Process process)
+    [Fact]
+    public async Task Application_ShouldConsumeLowMemory()
     {
-        return process.TotalProcessorTime.TotalMilliseconds / (Environment.ProcessorCount * 1000);
+        // Arrange
+        var initialMemory = GC.GetTotalMemory(true);
+
+        // Act
+        await Task.Delay(500); // Simulate workload
+        var finalMemory = GC.GetTotalMemory(true);
+
+        // Assert
+        Assert.True(finalMemory - initialMemory < 50 * 1024 * 1024, // 50 MB
+            $"Expected memory usage increase to be under 50MB, but it was {(finalMemory - initialMemory) / (1024 * 1024)}MB");
+    }
+
+    [Fact]
+    public async Task Benchmark_ProcessMonitorPerformance()
+    {
+        var summary = await Task.Run(() => BenchmarkRunner.Run<ProcessMonitorBenchmark>());
+        Assert.NotNull(summary);
+    }
+
+    private static double GetCpuUsage()
+    {
+        using var process = Process.GetCurrentProcess();
+        return process.TotalProcessorTime.TotalMilliseconds / Environment.ProcessorCount;
+    }
+}
+
+[MemoryDiagnoser]
+public class ProcessMonitorBenchmark
+{
+    private readonly ProcessMonitorService _monitor = new(null!, null!, null!);
+
+    [Benchmark]
+    public void StartProcessMonitoring()
+    {
+        _monitor.StartMonitoringAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
 }

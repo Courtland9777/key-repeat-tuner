@@ -1,153 +1,106 @@
-﻿using System.IO.Abstractions;
-using System.Text;
-using Moq;
+﻿using System.Text;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog.Sinks.InMemory;
 
 namespace StarCraftKeyManager.Tests;
 
 public class LoggingTests
 {
-    private const string LogFilePath = "logs/process_monitor.log";
+    private readonly Logger _logger;
+    private readonly InMemorySink _sink;
 
-    [Fact]
-    public void LogFile_ShouldContainProcessEvents_Mocked()
+    public LoggingTests()
     {
-        // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.File.Exists(LogFilePath)).Returns(true);
-        mockFileSystem.Setup(fs => fs.File.ReadAllText(LogFilePath))
-            .Returns("Process Monitor Service Started\nApplying Key Repeat Settings");
-        // Act
-        var logExists = mockFileSystem.Object.File.Exists(LogFilePath);
-        var logContent = mockFileSystem.Object.File.ReadAllText(LogFilePath);
-        // Assert
-        Assert.True(logExists);
-        Assert.Contains("Process Monitor Service Started", logContent);
-        Assert.Contains("Applying Key Repeat Settings", logContent);
-    }
-
-    [Theory]
-    [InlineData("Process Monitor Service Started")]
-    [InlineData("Process Monitor Service Stopped")]
-    [InlineData("Applying Key Repeat Settings")]
-    public void LogFile_ShouldContainExpectedMessages(string expectedMessage)
-    {
-        // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.File.ReadAllText(LogFilePath))
-            .Returns($"Some log content\n{expectedMessage}\nOther log content");
-        // Act
-        var logContent = mockFileSystem.Object.File.ReadAllText(LogFilePath);
-        // Assert
-        Assert.Contains(expectedMessage, logContent);
-    }
-
-    [Theory]
-    [InlineData(5 * 1024 * 1024)] // 5 MB
-    [InlineData(10 * 1024 * 1024)] // 10 MB
-    [InlineData(20 * 1024 * 1024)] // 20 MB
-    public void LogFile_ShouldRotateWhenSizeExceedsLimit_Parameterized(long sizeLimit)
-    {
-        // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        var mockFileInfo = new Mock<IFileInfo>();
-        mockFileInfo.Setup(f => f.Length).Returns(sizeLimit - 1); // Simulate file size
-        mockFileSystem.Setup(fs => fs.FileInfo.New(LogFilePath)).Returns(mockFileInfo.Object);
-        // Act
-        var fileInfo = mockFileSystem.Object.FileInfo.New(LogFilePath);
-        // Assert
-        Assert.True(fileInfo.Length < sizeLimit, $"Log file size should not exceed {sizeLimit / (1024 * 1024)} MB.");
+        _sink = new InMemorySink();
+        _logger = new LoggerConfiguration()
+            .WriteTo.Sink(_sink)
+            .CreateLogger();
     }
 
     [Fact]
-    public void LogFile_ShouldHaveCorrectPermissions_Mocked()
+    public void Logger_ShouldWriteMessages()
     {
         // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        var mockFileInfo = new Mock<IFileInfo>();
-        mockFileInfo.Setup(f => f.IsReadOnly).Returns(false);
-        mockFileSystem.Setup(fs => fs.FileInfo.New(LogFilePath)).Returns(mockFileInfo.Object);
+        const string message = "Test log message";
+
         // Act
-        var fileInfo = mockFileSystem.Object.FileInfo.New(LogFilePath);
+        _logger.Information(message);
+
         // Assert
-        Assert.False(fileInfo.IsReadOnly, "Log file should be writable.");
+        var collection = _sink.LogEvents as LogEvent[] ?? [.. _sink.LogEvents];
+
+        Assert.Single(collection);
+        Assert.Contains(collection, e => e.MessageTemplate.Text.Contains(message));
     }
+
 
     [Fact]
     public void LogFile_ShouldBeUtf8Encoded()
     {
         // Arrange
-        const string logMessage = "Mock log content";
-        var logBytes = Encoding.UTF8.GetBytes(logMessage);
-        var memoryStream = new MemoryStream(logBytes);
+        var logFilePath = Path.Combine(Path.GetTempPath(), "test_log.txt");
+        const string logMessage = "UTF-8 Encoding Test";
+
+        var logger = new LoggerConfiguration()
+            .WriteTo.File(logFilePath, encoding: Encoding.UTF8)
+            .CreateLogger();
 
         // Act
-        using var reader = new StreamReader(memoryStream, Encoding.UTF8, true);
-        var readContent = reader.ReadToEnd();
+        logger.Information(logMessage);
+        logger.Dispose();
 
         // Assert
-        Assert.Equal(logMessage, readContent);
+        var fileBytes = File.ReadAllBytes(logFilePath);
+        var fileContent = Encoding.UTF8.GetString(fileBytes);
+
+        Assert.Contains(logMessage, fileContent);
     }
 
     [Fact]
-    public void LogFile_ShouldCleanupOldLogs_Mocked()
+    public async Task Logger_ShouldHandleConcurrentWrites()
     {
         // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.Directory.GetFiles(It.IsAny<string>(), "*.log"))
-            .Returns(["log1.log", "log2.log", "log3.log", "log4.log", "log5.log", "log6.log"]);
+        var logFilePath = Path.Combine(Path.GetTempPath(), "concurrent_log.txt");
+        var logger = new LoggerConfiguration()
+            .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
+        var messages = new[] { "Message 1", "Message 2", "Message 3", "Message 4", "Message 5" };
+
         // Act
-        var logFiles = mockFileSystem.Object.Directory.GetFiles("logs", "*.log");
+        await Task.Run(() => { Parallel.ForEach(messages, message => { logger.Information(message); }); });
+
+        await logger.DisposeAsync();
+
         // Assert
-        Assert.True(logFiles.Length <= 5, "There should not be more than 5 log files.");
+        var logContent = await File.ReadAllTextAsync(logFilePath);
+        foreach (var message in messages) Assert.Contains(message, logContent);
     }
 
     [Fact]
-    public void LogFile_ShouldLogErrorMessages()
+    public void Logger_ShouldFormatMessagesCorrectly()
     {
         // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.File.ReadAllText(LogFilePath)).Returns("Error: Unable to start process monitor");
+        const string testUser = "TestUser";
+
         // Act
-        var logContent = mockFileSystem.Object.File.ReadAllText(LogFilePath);
+        _logger.Information("User {User} logged in", testUser);
+
         // Assert
-        Assert.Contains("Error: Unable to start process monitor", logContent);
+        var logEvent = _sink.LogEvents.FirstOrDefault(); // ✅ Use FirstOrDefault()
+        Assert.NotNull(logEvent);
+        Assert.Contains($"User {testUser} logged in", logEvent.RenderMessage());
     }
 
     [Fact]
-    public void LogFile_ShouldHandleMissingFileGracefully()
+    public void Logger_ShouldWriteWarningLogs()
     {
-        // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.File.Exists(LogFilePath)).Returns(false);
         // Act
-        var logExists = mockFileSystem.Object.File.Exists(LogFilePath);
-        // Assert
-        Assert.False(logExists, "Log file should not exist.");
-    }
+        _logger.Warning("This is a warning message");
 
-    [Fact]
-    public void LogFile_ShouldHaveValidLogEntryFormat()
-    {
-        // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.File.ReadAllText(LogFilePath))
-            .Returns("[2023-10-10 12:00:00] [INFO] Log entry 1\n[2023-10-10 12:05:00] [ERROR] Log entry 2");
-        var logContent = mockFileSystem.Object.File.ReadAllText(LogFilePath);
-        var logEntries = logContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        // Act & Assert
-        foreach (var entry in logEntries)
-            Assert.Matches(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[INFO|ERROR|WARN\] .+$", entry);
-    }
-
-    [Fact]
-    public void LogFile_ShouldHandleConcurrentAccess()
-    {
-        // Arrange
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.File.AppendAllText(It.IsAny<string>(), It.IsAny<string>()));
-        // Act
-        Parallel.For(0, 10, i => { mockFileSystem.Object.File.AppendAllText(LogFilePath, $"Log entry {i}\n"); });
         // Assert
-        mockFileSystem.Verify(fs => fs.File.AppendAllText(LogFilePath, It.IsAny<string>()), Times.Exactly(10));
+        Assert.Contains(_sink.LogEvents, e => e.Level == LogEventLevel.Warning);
     }
 }
