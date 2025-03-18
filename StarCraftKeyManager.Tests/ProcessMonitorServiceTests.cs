@@ -7,13 +7,13 @@ using StarCraftKeyManager.Services;
 
 namespace StarCraftKeyManager.Tests;
 
-public class ProcessMonitorTests
+public class ProcessMonitorServiceTests
 {
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
     private readonly ProcessMonitorService _processMonitorService;
 
-    public ProcessMonitorTests()
+    public ProcessMonitorServiceTests()
     {
         _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
         Mock<IOptionsMonitor<AppSettings>> mockOptionsMonitor = new();
