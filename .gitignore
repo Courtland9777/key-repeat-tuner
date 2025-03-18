@@ -145,3 +145,4 @@ docker-compose.override.yml
 **/.dockerignore
 
 /.gptignore
+Properties/launchSettings.json
