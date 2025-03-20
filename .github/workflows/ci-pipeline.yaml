@@ -44,7 +44,7 @@ jobs:
         $psexecUrl = "https://live.sysinternals.com/PsExec.exe"
         $psexecPath = "$env:TEMP\PsExec.exe"
         Invoke-WebRequest -Uri $psexecUrl -OutFile $psexecPath
-        & $psexecPath -accepteula -nobanner -h cmd /c "cd $env:GITHUB_WORKSPACE && dotnet test --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults"
+        & $psexecPath -accepteula -nobanner -h cmd /c "cd $env:GITHUB_WORKSPACE && dotnet test StarCraftKeyManager.sln --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults"
     
     - name: Upload Test Logs on Failure
       if: failure()
