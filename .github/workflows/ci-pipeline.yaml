@@ -41,10 +41,7 @@ jobs:
     - name: Run Tests with Admin Privileges  
       shell: pwsh
       run: |
-        $psexecUrl = "https://live.sysinternals.com/PsExec.exe"
-        $psexecPath = "$env:TEMP\PsExec.exe"
-        Invoke-WebRequest -Uri $psexecUrl -OutFile $psexecPath
-        & $psexecPath -accepteula -nobanner -h cmd /c "cd $env:GITHUB_WORKSPACE && dotnet test StarCraftKeyManager.sln --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults"
+        Start-Process -FilePath "dotnet" -ArgumentList "test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout 60s" -Verb RunAs -Wait
     
     - name: Upload Test Logs on Failure
       if: failure()
