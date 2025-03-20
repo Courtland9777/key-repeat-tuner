@@ -41,7 +41,7 @@ jobs:
     - name: Run Tests
       shell: pwsh
       run: |
-        dotnet test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout 60s"
+        dotnet test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout "60s"
     
     - name: Upload Test Logs on Failure
       if: failure()
