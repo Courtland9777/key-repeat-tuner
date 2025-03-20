@@ -41,7 +41,10 @@ jobs:
     - name: Run Tests with Admin Privileges  
       shell: pwsh
       run: |
-        Start-Process -FilePath "dotnet" -ArgumentList "test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout 60s" -Verb RunAs -Wait
+        $psexecUrl = "https://live.sysinternals.com/PsExec.exe"
+        $psexecPath = "$env:TEMP\PsExec.exe"
+        Invoke-WebRequest -Uri $psexecUrl -OutFile $psexecPath
+        & $psexecPath -accepteula -nobanner -h cmd /c "cd $env:GITHUB_WORKSPACE && dotnet test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout 60s"
     
     - name: Upload Test Logs on Failure
       if: failure()
