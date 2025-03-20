@@ -16,11 +16,9 @@ public class ProcessMonitorServiceTests
     public ProcessMonitorServiceTests()
     {
         _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
-        Mock<IOptionsMonitor<AppSettings>> mockOptionsMonitor = new();
         _mockProcessEventWatcher = new Mock<IProcessEventWatcher>();
 
-        // Mock AppSettings
-        var mockAppSettings = new AppSettings
+        var mockSettings = new AppSettings
         {
             ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
             KeyRepeat = new KeyRepeatSettings
@@ -30,159 +28,213 @@ public class ProcessMonitorServiceTests
             }
         };
 
-        mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockAppSettings);
+        var mockOptionsMonitor = new Mock<IOptionsMonitor<AppSettings>>();
+        mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockSettings);
+        var optionsMonitor = mockOptionsMonitor.Object;
 
         _processMonitorService = new ProcessMonitorService(
             _mockLogger.Object,
-            mockOptionsMonitor.Object,
+            optionsMonitor,
             _mockProcessEventWatcher.Object
         );
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldStartAndStopWithoutErrors()
+    public async Task StartAsync_ShouldStartMonitoring_WithoutErrors()
     {
-        // Act
         await _processMonitorService.StartAsync(CancellationToken.None);
         await _processMonitorService.StopAsync(CancellationToken.None);
 
-        // Assert
-        _mockLogger.VerifyNoOtherCalls(); // Ensure no unexpected logs
+        _mockLogger.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldApplyKeyRepeatSettings_WhenProcessStarts()
+    public async Task ProcessEventOccurred_ShouldApplyKeyRepeatSettings_WhenProcessStarts()
     {
-        // Arrange
-        var tcs = new TaskCompletionSource<bool>();
-        _mockProcessEventWatcher
-            .Setup(watcher => watcher.Start())
-            .Callback(() => tcs.SetResult(true));
-
-        // Act
         await _processMonitorService.StartAsync(CancellationToken.None);
-        await tcs.Task; // ✅ Ensures process event is fully handled
 
-        // Assert
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()
-            ),
-            Times.AtLeastOnce,
-            "Expected key repeat settings to be applied on process start."
-        );
-    }
-
-    [Fact]
-    public async Task ProcessMonitor_ShouldTrackProcess_WhenStarted()
-    {
-        // Arrange
-        var tcs = new TaskCompletionSource<bool>();
-        _mockProcessEventWatcher.Setup(w => w.Start()).Callback(() => tcs.SetResult(true));
-
-        // Act
-        await _processMonitorService.StartAsync(CancellationToken.None);
-        await tcs.Task;
-
-        // Assert
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<object>(o => o.ToString()!.Contains("Monitoring process: starcraft.exe")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()
-            ),
-            Times.AtLeastOnce,
-            "Expected process monitoring to start."
-        );
-    }
-
-    [Fact]
-    public async Task ProcessMonitor_ShouldDetectProcessExit()
-    {
-        // Arrange
-        var tcs = new TaskCompletionSource<bool>();
-        _mockProcessEventWatcher
-            .Setup(w => w.Start())
-            .Callback(() => _mockProcessEventWatcher.Raise(
-                w => w.ProcessEventOccurred += null,
-                new ProcessEventArgs(4689, 1234, "starcraft.exe")
-            ));
-
-        _mockProcessEventWatcher
-            .Setup(w => w.Stop())
-            .Callback(() => tcs.SetResult(true));
-
-        // Act
-        await _processMonitorService.StartAsync(CancellationToken.None);
-        await tcs.Task;
-
-        // Assert
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<object>(o => o.ToString()!.Contains("Process exited: starcraft.exe")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()
-            ),
-            Times.AtLeastOnce,
-            "Expected process exit to be detected and logged."
-        );
-    }
-
-    [Fact]
-    public async Task ProcessMonitor_ShouldNotApplySettings_WhenProcessNameDoesNotMatch()
-    {
-        // Arrange
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "notepad.exe") // Different process
+            new ProcessEventArgs(4688, 1234, "starcraft.exe")
         );
 
-        // Act
-        await Task.Delay(100); // Give time for event processing
-
-        // Assert
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()
-            ),
-            Times.Never,
-            "Expected no key repeat settings change when process name does not match."
-        );
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings: FastMode")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Once);
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldRestoreDefaultSettings_WhenProcessExits()
+    public async Task StartAsync_ShouldDetectProcessMonitoring_WhenInvoked()
     {
-        _mockProcessEventWatcher
-            .Setup(w => w.Start())
-            .Callback(() => _mockProcessEventWatcher.Raise(
-                w => w.ProcessEventOccurred += null,
-                new ProcessEventArgs(4689, 1234, "starcraft.exe") // Exit event
-            ));
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Monitoring process: starcraft.exe")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessEventOccurred_ShouldDetectProcessExit_AndRestoreDefaultSettings()
+    {
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4689, 1234, "starcraft.exe")
+        );
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Restoring default key repeat settings")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessEventOccurred_ShouldNotApplySettings_WhenProcessNameDoesNotMatch()
+    {
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "notepad.exe")
+        );
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Never);
+    }
+
+    [Fact]
+    public async Task StartAsync_ShouldApplyFastMode_WhenStarCraftIsAlreadyRunning()
+    {
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+        );
 
         await _processMonitorService.StartAsync(CancellationToken.None);
 
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<object>(msg => msg.ToString()!.Contains("Restoring default key repeat settings")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()
-            ),
-            Times.AtLeastOnce
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings: FastMode")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessEventOccurred_ShouldHandleMultipleInstances_Correctly()
+    {
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "starcraft.exe")
         );
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 5678, "starcraft.exe")
+        );
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings: FastMode")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessEventOccurred_ShouldRestoreDefaultSettings_WhenAllInstancesExit()
+    {
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+        );
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 5678, "starcraft.exe")
+        );
+
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4689, 1234, "starcraft.exe")
+        );
+        _mockProcessEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4689, 5678, "starcraft.exe")
+        );
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Restoring default key repeat settings")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task StartAsync_ShouldRecoverGracefully_AfterUnexpectedShutdown()
+    {
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        await _processMonitorService.StopAsync(CancellationToken.None);
+
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Process monitor service started")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task ProcessEventOccurred_ShouldHandleRapidStartsAndStops_WithoutErrors()
+    {
+        await _processMonitorService.StartAsync(CancellationToken.None);
+
+        for (var i = 0; i < 10; i++)
+        {
+            _mockProcessEventWatcher.Raise(
+                w => w.ProcessEventOccurred += null,
+                new ProcessEventArgs(4688, i, "starcraft.exe")
+            );
+
+            _mockProcessEventWatcher.Raise(
+                w => w.ProcessEventOccurred += null,
+                new ProcessEventArgs(4689, i, "starcraft.exe")
+            );
+        }
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings")),
+            null,
+            It.IsAny<Func<object, Exception?, string>>()
+        ), Times.AtMost(2));
     }
 }

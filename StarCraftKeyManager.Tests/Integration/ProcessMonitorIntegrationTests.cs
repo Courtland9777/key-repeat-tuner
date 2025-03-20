@@ -40,7 +40,7 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldStartAndApplyKeyRepeatSettings()
+    public async Task StartAsync_ShouldBeginMonitoring_WhenInvoked()
     {
         var cts = new CancellationTokenSource();
         var monitorTask = _processMonitorService.StartAsync(cts.Token);
@@ -59,13 +59,10 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldDetectProcessStartAndApplyFastModeSettings()
+    public async Task ProcessEventOccurred_ShouldApplyFastMode_WhenStarCraftStarts()
     {
-        var tcs = new TaskCompletionSource<bool>();
-        _mockProcessEventWatcher.Setup(w => w.Start()).Callback(() => tcs.SetResult(true));
-
         await _processMonitorService.StartAsync(CancellationToken.None);
-        await tcs.Task;
+
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
             new ProcessEventArgs(4688, 1234, "starcraft.exe")
@@ -77,23 +74,18 @@ public class ProcessMonitorIntegrationTests
             It.Is<object>(o => o != null! && o.ToString()!.Contains("Applying key repeat settings: FastMode")),
             null,
             It.IsAny<Func<object, Exception?, string>>()
-        ), Times.AtLeastOnce);
+        ), Times.Once);
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldDetectProcessExitAndRestoreDefaultSettings()
+    public async Task ProcessEventOccurred_ShouldRestoreDefaultSettings_WhenStarCraftStops()
     {
-        var tcs = new TaskCompletionSource<bool>();
-        _mockProcessEventWatcher.Setup(w => w.Start()).Callback(() => tcs.SetResult(true));
-
         await _processMonitorService.StartAsync(CancellationToken.None);
-        await tcs.Task;
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
             new ProcessEventArgs(4688, 1234, "starcraft.exe")
         );
-        await Task.Delay(500);
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
@@ -103,14 +95,14 @@ public class ProcessMonitorIntegrationTests
         _mockLogger.Verify(log => log.Log(
             LogLevel.Information,
             It.IsAny<EventId>(),
-            It.Is<object>(o => o != null! && o.ToString()!.Contains("Restoring default key repeat settings")),
+            It.Is<object>(o => o.ToString()!.Contains("Restoring default key repeat settings")),
             null,
             It.IsAny<Func<object, Exception?, string>>()
-        ), Times.AtLeastOnce);
+        ), Times.Once);
     }
 
     [Fact]
-    public void ProcessMonitor_ShouldHandleConfigurationUpdate()
+    public void ConfigurationUpdated_ShouldApplyNewSettings_WhenConfigurationChanges()
     {
         var newSettings = new AppSettings
         {
@@ -124,6 +116,7 @@ public class ProcessMonitorIntegrationTests
 
         var mockOptionsMonitor = new Mock<IOptionsMonitor<AppSettings>>();
         mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(newSettings);
+
         _mockLogger.Verify(log => log.Log(
             LogLevel.Information,
             It.IsAny<EventId>(),
@@ -134,7 +127,7 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldNotApplySettingsForDifferentProcess()
+    public async Task ProcessEventOccurred_ShouldNotApplySettings_WhenProcessIsNotStarCraft()
     {
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
@@ -154,7 +147,7 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldHandleProcessMonitorFailure()
+    public async Task StartAsync_ShouldLogError_WhenProcessWatcherFailsToStart()
     {
         _mockProcessEventWatcher.Setup(w => w.Start()).Throws(new Exception("Failed to start watcher"));
 
@@ -170,7 +163,7 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldIgnoreUnknownEventIds()
+    public async Task ProcessEventOccurred_ShouldIgnoreUnknownEventId_WhenInvalidEventIsReceived()
     {
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
@@ -190,7 +183,7 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldApplyDefaultSettingsOnStartup()
+    public async Task StartAsync_ShouldApplyDefaultSettings_OnStartup()
     {
         await _processMonitorService.StartAsync(CancellationToken.None);
 
@@ -204,7 +197,7 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldHandleMultipleConcurrentProcessStarts()
+    public async Task ProcessEventOccurred_ShouldHandleMultipleProcessStarts_WhenStarCraftStartsMultipleTimes()
     {
         await _processMonitorService.StartAsync(CancellationToken.None);
 
@@ -227,7 +220,7 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessMonitor_ShouldHandleMultipleConcurrentProcessExits()
+    public async Task ProcessEventOccurred_ShouldHandleMultipleProcessExits_WhenStarCraftStopsMultipleTimes()
     {
         await _processMonitorService.StartAsync(CancellationToken.None);
 
