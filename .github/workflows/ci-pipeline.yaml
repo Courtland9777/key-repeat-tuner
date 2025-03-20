@@ -9,7 +9,7 @@ on:
     branches:
       - master
       - develop
-  workflow_dispatch:  
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -22,43 +22,33 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        timeout_minutes: 2
-        max_attempts: 3
-        retry_wait_seconds: 10
-        polling_interval_seconds: 1
-        warning_on_retry: true
-        continue_on_error: false
-        command: |
-            try {
-              dotnet --version
-            } catch {
-              Invoke-WebRequest "https://dot.net/v1/dotnet-install.ps1" -OutFile "dotnet-install.ps1"
-              pwsh ./dotnet-install.ps1 -Version 8.0.x -InstallDir $env:DOTNET_ROOT
-              $env:PATH = "$env:DOTNET_ROOT;$env:PATH"
-              dotnet --version
-            }
-        shell: pwsh
+        dotnet-version: 8.0.x
 
-    - name: Cache NuGet packages  
+    - name: Cache NuGet packages
       uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
         key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
         restore-keys: |
           nuget-${{ runner.os }}-
+
     - name: Restore Dependencies
       run: dotnet restore
 
     - name: Build Project
       run: dotnet build --configuration Release --no-restore
 
-    - name: Run Tests with Admin Privileges and Parallel Execution  
+    - name: Run Tests with Admin Privileges  
       shell: pwsh
       run: |
-        Start-Process -FilePath "dotnet" -ArgumentList "test --configuration Release --no-build --verbosity normal --parallel --blame-hang-timeout 60s" -Verb RunAs -Wait
+        $psexecUrl = "https://live.sysinternals.com/PsExec.exe"
+        $psexecPath = "$env:TEMP\PsExec.exe"
+        Invoke-WebRequest -Uri $psexecUrl -OutFile $psexecPath
+        & $psexecPath -accepteula -nobanner -h dotnet test --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults
+
     - name: Upload Test Logs on Failure
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: test-logs
-        path: logs/
+        name: test-results
+        path: TestResults/
