@@ -24,6 +24,9 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <ProjectReference Include="..\StarCraftKeyManager\StarCraftKeyManager.csproj" />
+    <Content Include="..\xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
