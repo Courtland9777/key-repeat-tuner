@@ -32,9 +32,6 @@ jobs:
         restore-keys: |
           nuget-${{ runner.os }}-
 
-    - name: Disable Workload Update Warnings
-      run: dotnet workload update --skip-manifest-update
-
     - name: Restore Dependencies
       run: dotnet restore
 
