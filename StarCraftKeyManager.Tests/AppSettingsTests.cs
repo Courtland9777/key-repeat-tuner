@@ -2,6 +2,7 @@
 using Moq;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Validators;
+using Xunit;
 
 namespace StarCraftKeyManager.Tests;
 
@@ -135,7 +136,7 @@ public class AppSettingsTests
             ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 }, // ✅ Set Default
+                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
                 FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
             }
         };

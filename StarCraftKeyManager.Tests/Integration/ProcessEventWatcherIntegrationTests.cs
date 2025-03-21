@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
+using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
 

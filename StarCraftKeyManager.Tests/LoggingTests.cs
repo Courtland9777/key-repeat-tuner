@@ -3,6 +3,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.InMemory;
+using Xunit;
 
 namespace StarCraftKeyManager.Tests;
 

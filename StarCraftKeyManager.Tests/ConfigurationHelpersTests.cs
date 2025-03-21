@@ -11,6 +11,7 @@ using StarCraftKeyManager.Helpers;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
+using Xunit;
 
 namespace StarCraftKeyManager.Tests;
 
