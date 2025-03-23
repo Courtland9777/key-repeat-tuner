@@ -23,9 +23,6 @@
     </PackageReference>
 
     <!-- Suppress runtime inclusion of Microsoft.Diagnostics.NETCore.Client -->
-    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.251802">
-      <ExcludeAssets>runtime; build; native; contentfiles; analyzers</ExcludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
