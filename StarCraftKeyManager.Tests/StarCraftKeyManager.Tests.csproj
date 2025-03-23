@@ -22,7 +22,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 
-    <!-- Suppress runtime inclusion of Microsoft.Diagnostics.NETCore.Client -->
   </ItemGroup>
 
   <ItemGroup>
