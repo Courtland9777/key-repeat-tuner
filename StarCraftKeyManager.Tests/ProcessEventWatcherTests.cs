@@ -3,6 +3,7 @@ using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using Xunit;
@@ -11,173 +12,160 @@ namespace StarCraftKeyManager.Tests;
 
 public class ProcessEventWatcherTests
 {
-    private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger;
-    private readonly ProcessEventWatcher _processEventWatcher;
+    private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger = new();
+    private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptionsMonitor = new();
+    private readonly Mock<IEventWatcherFactory> _mockWatcherFactory = new();
+    private readonly ProcessEventWatcher _watcher;
 
     public ProcessEventWatcherTests()
     {
-        _mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
-        Mock<IOptionsMonitor<AppSettings>> mockOptionsMonitor = new();
-
-        var mockAppSettings = new AppSettings
+        _mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings
-            {
-                ProcessName = "starcraft.exe"
-            },
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
                 FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
             }
-        };
-
-        mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockAppSettings);
-        _processEventWatcher = new ProcessEventWatcher(_mockLogger.Object, mockOptionsMonitor.Object);
-    }
-
-    [Fact]
-    public void ProcessEventWatcher_ShouldStartAndStopWithoutErrors()
-    {
-        // Act
-        _processEventWatcher.Start();
-        _processEventWatcher.Stop();
-
-        // Assert
-        _mockLogger.VerifyNoOtherCalls(); // Ensure no unexpected logs
-    }
-
-    [Fact]
-    public void ProcessEventWatcher_ShouldTriggerProcessEventOccurred_WithValidEvent()
-    {
-        // Arrange
-        var eventRaised = false;
-        _processEventWatcher.ProcessEventOccurred += (_, _) => eventRaised = true;
-
-        var mockEventArgs = CreateMockEventArgs(4688, "notepad.exe");
-
-        // Act
-        _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEventArgs);
-
-        // Assert
-        Assert.True(eventRaised, "ProcessEventOccurred should have been raised for event ID 4688.");
-    }
-
-    [Fact]
-    public void ProcessEventWatcher_ShouldHandleNullEventRecord_Gracefully()
-    {
-        // Arrange
-        var mockEventArgs = new Mock<EventRecordWrittenEventArgs>();
-        mockEventArgs.Setup(e => e.EventRecord).Returns((EventRecord?)null!);
-
-        // Act
-        _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEventArgs.Object);
-
-        // Assert
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<object>(msg => msg.ToString()!.Contains("Null EventRecord received")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()),
-            Times.Once,
-            "Expected a warning log when EventRecord is null."
-        );
-    }
-
-    [Fact]
-    public void ProcessEventWatcher_ShouldIgnoreEvents_WithMissingProperties()
-    {
-        // Arrange
-        var mockEventArgs = CreateMockEventArgs(4688, null);
-
-        // Act
-        _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEventArgs);
-
-        // Assert
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<object>(msg => msg.ToString()!.Contains("Missing required properties")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()),
-            Times.Once,
-            "Expected a warning log when event properties are missing."
-        );
-    }
-
-    [Fact]
-    public async Task ProcessEventWatcher_ShouldProcessMultipleEvents_Correctly()
-    {
-        // Arrange
-        var eventCount = 0;
-        _processEventWatcher.ProcessEventOccurred += (_, _) => eventCount++;
-
-        var mockEvents = new[]
-        {
-            CreateMockEventArgs(4688, "notepad.exe"),
-            CreateMockEventArgs(4688, "chrome.exe"),
-            CreateMockEventArgs(4689, "notepad.exe"),
-            CreateMockEventArgs(4689, "chrome.exe"),
-            CreateMockEventArgs(4688, "word.exe")
-        };
-
-        // Act
-        await Task.Run(() =>
-        {
-            foreach (var mockEvent in mockEvents)
-                _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEvent);
         });
 
-        // Assert
-        Assert.Equal(5, eventCount);
+        _mockWatcherFactory
+            .Setup(f => f.Create(It.IsAny<EventLogQuery>()))
+            .Returns(Mock.Of<EventLogWatcher>());
+
+        _watcher = new ProcessEventWatcher(
+            _mockLogger.Object,
+            _mockOptionsMonitor.Object,
+            _mockWatcherFactory.Object
+        );
+
+        _watcher.Configure("starcraft.exe");
     }
 
     [Fact]
-    public void ProcessEventWatcher_ShouldIgnoreInvalidEventIds()
+    public void Start_And_Stop_ShouldLogCorrectly()
     {
-        // Arrange
-        var eventRaised = false;
-        _processEventWatcher.ProcessEventOccurred += (_, _) => eventRaised = true;
+        _watcher.Start();
+        _watcher.Stop();
 
-        var mockEventArgs = CreateMockEventArgs(9999, "unknown.exe"); // Invalid event ID
+        _mockLogger.Verify(l => l.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("started")),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
 
-        // Act
-        _processEventWatcher.EventWatcherOnEventRecordWritten(this, mockEventArgs);
-
-        // Assert
-        Assert.False(eventRaised, "ProcessEventOccurred should not trigger for unknown event IDs.");
+        _mockLogger.Verify(l => l.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("stopped")),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
 
-    private static EventRecordWrittenEventArgs CreateMockEventArgs(int eventId, string? processName)
+    [Fact]
+    public void Event_ShouldBeRaised_ForValidStartAndStopEvents()
     {
-        var mockEvent = new Mock<EventRecordWrittenEventArgs>();
-        var mockRecord = new Mock<EventRecord>();
+        var raised = 0;
+        _watcher.ProcessEventOccurred += (_, _) => raised++;
 
+        _watcher.EventWatcherOnEventRecordWritten(this, CreateMockArgs(4688, 123));
+        _watcher.EventWatcherOnEventRecordWritten(this, CreateMockArgs(4689, 123));
+
+        Assert.Equal(2, raised);
+    }
+
+    [Fact]
+    public void Event_ShouldNotBeRaised_ForUnknownEventId()
+    {
+        var raised = false;
+        _watcher.ProcessEventOccurred += (_, _) => raised = true;
+
+        _watcher.EventWatcherOnEventRecordWritten(this, CreateMockArgs(9999, 123));
+
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public void ShouldLogWarning_WhenEventRecordIsNull()
+    {
+        var mockArgs = new Mock<EventRecordWrittenEventArgs>();
+        mockArgs.Setup(a => a.EventRecord).Returns((EventRecord?)null!);
+
+        _watcher.EventWatcherOnEventRecordWritten(this, mockArgs.Object);
+
+        _mockLogger.Verify(l => l.Log(
+            LogLevel.Warning,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Null EventRecord")),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+    }
+
+    [Fact]
+    public void ShouldLogError_WhenProcessIdExtractionFails()
+    {
+        var mockRecord = new Mock<EventRecord>();
+        mockRecord.Setup(r => r.Id).Returns(4688);
+        mockRecord.Setup(r => r.Properties).Returns([]); // Missing required indexes
+
+        var mockArgs = new Mock<EventRecordWrittenEventArgs>();
+        mockArgs.Setup(e => e.EventRecord).Returns(mockRecord.Object);
+
+        _watcher.EventWatcherOnEventRecordWritten(this, mockArgs.Object);
+
+        _mockLogger.Verify(l => l.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Error extracting process ID")),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task MultipleEvents_ShouldAllTriggerEvent()
+    {
+        var count = 0;
+        _watcher.ProcessEventOccurred += (_, _) => count++;
+
+        IEnumerable<EventRecordWrittenEventArgs> events =
+        [
+            CreateMockArgs(4688, 1),
+            CreateMockArgs(4688, 2),
+            CreateMockArgs(4689, 1),
+            CreateMockArgs(4689, 2),
+            CreateMockArgs(4688, 3)
+        ];
+
+        await Task.Run(() =>
+        {
+            foreach (var e in events)
+                _watcher.EventWatcherOnEventRecordWritten(this, e);
+        });
+
+        Assert.Equal(5, count);
+    }
+
+    private static EventRecordWrittenEventArgs CreateMockArgs(int eventId, int? processId)
+    {
+        var mockRecord = new Mock<EventRecord>();
         mockRecord.Setup(r => r.Id).Returns(eventId);
 
-        if (processName != null)
-        {
-            var eventProperties = new List<EventProperty>
-            {
-                CreateEventProperty(processName)
-            };
+        mockRecord.Setup(r => r.Properties).Returns(processId is not null
+            ?
+            [
+                CreateEventProp(0),
+                CreateEventProp(processId.Value),
+                CreateEventProp("some.exe")
+            ]
+            : []);
 
-            mockRecord.Setup(r => r.Properties).Returns(eventProperties);
-        }
-        else
-        {
-            mockRecord.Setup(r => r.Properties).Returns([]);
-        }
-
-        mockEvent.Setup(e => e.EventRecord).Returns(mockRecord.Object);
-
-        return mockEvent.Object;
+        var mockArgs = new Mock<EventRecordWrittenEventArgs>();
+        mockArgs.Setup(a => a.EventRecord).Returns(mockRecord.Object);
+        return mockArgs.Object;
     }
 
-    private static EventProperty CreateEventProperty(object value)
+    private static EventProperty CreateEventProp(object value)
     {
         return (EventProperty)Activator.CreateInstance(
             typeof(EventProperty),

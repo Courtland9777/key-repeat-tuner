@@ -33,7 +33,8 @@ public class ProcessEventWatcherIntegrationTests
 
         _processEventWatcher = new ProcessEventWatcher(
             _mockLogger.Object,
-            mockOptionsMonitor.Object
+            mockOptionsMonitor.Object,
+            new EventWatcherFactory()
         );
     }
 

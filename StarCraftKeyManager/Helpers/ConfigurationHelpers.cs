@@ -65,6 +65,7 @@ public static class ConfigurationHelpers
         services.AddSingleton<ProcessMonitorService>();
         services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
+        services.AddSingleton<IEventWatcherFactory, EventWatcherFactory>();
     }
 
     public static bool IsRunningAsAdmin()

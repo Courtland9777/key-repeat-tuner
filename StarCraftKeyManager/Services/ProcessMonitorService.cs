@@ -46,8 +46,21 @@ internal sealed class ProcessMonitorService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Starting process monitor service.");
-        _processEventWatcher.Start();
+        try
+        {
+            _logger.LogInformation("Starting process monitor service.");
+            _processEventWatcher.Start();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start process watcher.");
+        }
+        finally
+        {
+            _logger.LogInformation("Stopping process monitor service.");
+            _processEventWatcher.Stop();
+            _processEventWatcher.ProcessEventOccurred -= OnProcessEventOccurred;
+        }
 
         var sanitizedProcessName = _processName.Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
         var initialProcesses = Process.GetProcessesByName(sanitizedProcessName);
@@ -87,6 +100,10 @@ internal sealed class ProcessMonitorService : BackgroundService
             case 4689:
                 _trackedProcesses.TryRemove(e.ProcessId, out _);
                 break;
+            default:
+                _logger.LogInformation("Unrelated process event occurred: {EventId} for PID {ProcessId}.", e.EventId,
+                    e.ProcessId);
+                return;
         }
 
         _isRunning = !_trackedProcesses.IsEmpty;

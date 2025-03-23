@@ -9,14 +9,17 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly ILogger<ProcessEventWatcher> _logger;
     private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
+    private readonly IEventWatcherFactory _watcherFactory;
     private EventHandler<EventRecordWrittenEventArgs>? _eventHandler;
     private EventLogWatcher? _eventWatcher;
     private bool _isStarted;
 
-    public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger, IOptionsMonitor<AppSettings> optionsMonitor)
+    public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger, IOptionsMonitor<AppSettings> optionsMonitor,
+        IEventWatcherFactory watcherFactory)
     {
         _logger = logger;
         _optionsMonitor = optionsMonitor;
+        _watcherFactory = watcherFactory;
     }
 
     public event EventHandler<ProcessEventArgs>? ProcessEventOccurred;
@@ -29,7 +32,7 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         {
             ReverseDirection = true
         };
-        _eventWatcher = new EventLogWatcher(eventQuery);
+        _eventWatcher = _watcherFactory.Create(eventQuery);
         _eventHandler = EventWatcherOnEventRecordWritten;
     }
 
