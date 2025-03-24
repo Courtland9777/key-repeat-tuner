@@ -3,10 +3,11 @@ using StarCraftKeyManager.Interfaces;
 
 namespace StarCraftKeyManager.Services;
 
-public class EventWatcherFactory : IEventWatcherFactory
+internal sealed class EventWatcherFactory : IEventWatcherFactory
 {
-    public EventLogWatcher Create(EventLogQuery query)
+    public IWrappedEventLogWatcher Create(EventLogQuery query)
     {
-        return new EventLogWatcher(query);
+        var watcher = new EventLogWatcher(query);
+        return new WrappedEventLogWatcher(watcher);
     }
 }

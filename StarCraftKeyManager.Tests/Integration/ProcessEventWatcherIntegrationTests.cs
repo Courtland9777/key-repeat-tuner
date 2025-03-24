@@ -5,6 +5,7 @@ using Moq;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
+using StarCraftKeyManager.Tests.TestHelpers;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
@@ -56,7 +57,8 @@ public class ProcessEventWatcherIntegrationTests
         var mockWatcherFactory = new Mock<IEventWatcherFactory>();
         mockWatcherFactory.Setup(f => f.Create(It.IsAny<EventLogQuery>()))
             .Callback<EventLogQuery>(q => capturedQuery = q)
-            .Returns(new EventLogWatcher(expectedQuery));
+            .Returns(new WrappedEventLogWatcher(new EventLogWatcher(expectedQuery)));
+
 
         var watcher = new ProcessEventWatcher(
             Mock.Of<ILogger<ProcessEventWatcher>>(),
@@ -76,33 +78,197 @@ public class ProcessEventWatcherIntegrationTests
     [Fact]
     public void Start_ShouldEnableEventWatcher_WhenNotAlreadyStarted()
     {
+        // Arrange
+        var query = new EventLogQuery("Security", PathType.LogName);
+
+        var mockQueryBuilder = new Mock<IEventLogQueryBuilder>();
+        mockQueryBuilder.Setup(q => q.BuildQuery()).Returns(query);
+
+        var mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
+
+        var mockFactory = new Mock<IEventWatcherFactory>();
+        var watcher = new EventLogWatcher(query);
+        var wrappedWatcher = new WrappedEventLogWatcher(watcher);
+        mockFactory.Setup(f => f.Create(query)).Returns(wrappedWatcher);
+
+
+        var sut = new ProcessEventWatcher(
+            mockLogger.Object,
+            Mock.Of<IOptionsMonitor<AppSettings>>(),
+            mockFactory.Object,
+            mockQueryBuilder.Object);
+
+        sut.Configure("starcraft.exe");
+
+        // Act
+        sut.Start();
+
+        // Assert
+        mockLogger.Verify(log => log.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                MoqLogExtensions.MatchLogState("Process event watcher started."),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
+
 
     [Fact]
     public void Start_ShouldNotEnableEventWatcher_WhenAlreadyStarted()
     {
+        // Arrange
+        var query = new EventLogQuery("Security", PathType.LogName);
+
+        var mockQueryBuilder = new Mock<IEventLogQueryBuilder>();
+        mockQueryBuilder.Setup(q => q.BuildQuery()).Returns(query);
+
+        var mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
+
+        var mockFactory = new Mock<IEventWatcherFactory>();
+        var watcher = new EventLogWatcher(query);
+        var wrappedWatcher = new WrappedEventLogWatcher(watcher);
+        mockFactory.Setup(f => f.Create(query)).Returns(wrappedWatcher);
+
+        var sut = new ProcessEventWatcher(
+            mockLogger.Object,
+            Mock.Of<IOptionsMonitor<AppSettings>>(),
+            mockFactory.Object,
+            mockQueryBuilder.Object);
+
+        sut.Configure("starcraft.exe");
+
+        // Act
+        sut.Start();
+        sut.Start();
+
+        // Assert
+        mockLogger.Verify(log => log.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                MoqLogExtensions.MatchLogState("Process event watcher started."),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
+
 
     [Fact]
     public void Stop_ShouldDisableEventWatcher_WhenStarted()
     {
+        // Arrange
+        var mockWatcher = new Mock<IWrappedEventLogWatcher>();
+        var mockFactory = new Mock<IEventWatcherFactory>();
+        var mockQueryBuilder = new Mock<IEventLogQueryBuilder>();
+        var mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
+
+        var query = new EventLogQuery("Security", PathType.LogName);
+        mockQueryBuilder.Setup(q => q.BuildQuery()).Returns(query);
+        mockFactory.Setup(f => f.Create(query)).Returns(mockWatcher.Object);
+
+        var sut = new ProcessEventWatcher(
+            mockLogger.Object,
+            Mock.Of<IOptionsMonitor<AppSettings>>(),
+            mockFactory.Object,
+            mockQueryBuilder.Object);
+
+        sut.Configure("starcraft.exe");
+        sut.Start();
+
+        // Act
+        sut.Stop();
+
+        // Assert
+        mockWatcher.VerifySet(w => w.Enabled = false, Times.Once);
+        mockWatcher.Verify(w => w.Dispose(), Times.Once);
+
+        mockLogger.Verify(log => log.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                MoqLogExtensions.MatchLogState("Process event watcher stopped."),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
+
 
     [Fact]
     public void Stop_ShouldNotThrow_WhenNotStarted()
     {
+        // Arrange
+        var query = new EventLogQuery("Security", PathType.LogName);
+
+        var mockQueryBuilder = new Mock<IEventLogQueryBuilder>();
+        mockQueryBuilder.Setup(q => q.BuildQuery()).Returns(query);
+
+        var mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
+
+        var mockFactory = new Mock<IEventWatcherFactory>();
+        var mockWatcher = new Mock<IWrappedEventLogWatcher>();
+        mockFactory.Setup(f => f.Create(query)).Returns(mockWatcher.Object);
+
+        var sut = new ProcessEventWatcher(
+            mockLogger.Object,
+            Mock.Of<IOptionsMonitor<AppSettings>>(),
+            mockFactory.Object,
+            mockQueryBuilder.Object);
+
+        // Configure but do not call Start()
+        sut.Configure("starcraft.exe");
+
+        // Act + Assert
+        var ex = Record.Exception(() => sut.Stop());
+        Assert.Null(ex); // should not throw
     }
+
 
     [Fact]
     public void Dispose_ShouldCallStop()
     {
+        // Arrange
+        var query = new EventLogQuery("Security", PathType.LogName);
+
+        var mockQueryBuilder = new Mock<IEventLogQueryBuilder>();
+        mockQueryBuilder.Setup(q => q.BuildQuery()).Returns(query);
+
+        var mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
+
+        var mockWatcher = new Mock<IWrappedEventLogWatcher>();
+        var mockFactory = new Mock<IEventWatcherFactory>();
+        mockFactory.Setup(f => f.Create(query)).Returns(mockWatcher.Object);
+
+        var sut = new ProcessEventWatcher(
+            mockLogger.Object,
+            Mock.Of<IOptionsMonitor<AppSettings>>(),
+            mockFactory.Object,
+            mockQueryBuilder.Object);
+
+        sut.Configure("starcraft.exe");
+        sut.Start();
+
+        // Act
+        sut.Dispose();
+
+        // Assert
+        mockWatcher.VerifySet(w => w.Enabled = false, Times.Once);
+        mockWatcher.Verify(w => w.Dispose(), Times.Once);
+
+        mockLogger.Verify(log => log.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                MoqLogExtensions.MatchLogState("Process event watcher stopped."),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
+
 
     // Event raising tests
     [Fact]
     public void ProcessEventOccurred_ShouldBeRaised_WhenStartEventReceived()
     {
     }
+
 
     [Fact]
     public void ProcessEventOccurred_ShouldBeRaised_WhenStopEventReceived()

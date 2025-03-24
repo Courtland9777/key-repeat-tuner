@@ -12,8 +12,9 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
     private readonly IEventLogQueryBuilder _queryBuilder;
     private readonly IEventWatcherFactory _watcherFactory;
     private EventHandler<EventRecordWrittenEventArgs>? _eventHandler;
-    private EventLogWatcher? _eventWatcher;
-    private bool _isStarted;
+
+    private IWrappedEventLogWatcher? _eventWatcher;
+    private bool _isRunning;
 
     public ProcessEventWatcher(
         ILogger<ProcessEventWatcher> logger,
@@ -32,32 +33,36 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
     public void Configure(string processName)
     {
         var query = _queryBuilder.BuildQuery();
+
         _eventWatcher = _watcherFactory.Create(query);
         _eventHandler = EventWatcherOnEventRecordWritten;
+
         _logger.LogInformation("Configured process watcher for {ProcessName}", processName);
     }
 
-
     public void Start()
     {
-        if (_isStarted || _eventWatcher == null) return;
+        if (_isRunning || _eventWatcher == null)
+            return;
 
-        _eventWatcher.EventRecordWritten += _eventHandler;
+        _eventWatcher.EventRecordWritten += _eventHandler!;
         _eventWatcher.Enabled = true;
-        _isStarted = true;
+        _isRunning = true;
 
         _logger.LogInformation("Process event watcher started.");
     }
 
     public void Stop()
     {
-        if (!_isStarted || _eventWatcher == null) return;
+        if (!_isRunning || _eventWatcher == null)
+            return;
 
         _eventWatcher.Enabled = false;
-        _eventWatcher.EventRecordWritten -= _eventHandler;
+        _eventWatcher.EventRecordWritten -= _eventHandler!;
         _eventWatcher.Dispose();
+
         _eventWatcher = null;
-        _isStarted = false;
+        _isRunning = false;
 
         _logger.LogInformation("Process event watcher stopped.");
     }
@@ -67,9 +72,13 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         Stop();
     }
 
-    public void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
+    internal void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
     {
-        if (e.EventRecord == null) return;
+        if (e.EventRecord == null)
+        {
+            _logger.LogWarning("Null EventRecord received from event log.");
+            return;
+        }
 
         try
         {
@@ -78,15 +87,18 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
 
             if (processId == null)
             {
-                _logger.LogWarning("Failed to extract process ID from event record.");
+                _logger.LogWarning("Missing required properties from event record.");
                 return;
             }
 
             _logger.LogInformation("Detected process event: EventId={EventId}, ProcessId={ProcessId}", eventId,
                 processId);
-            ProcessEventOccurred?.Invoke(this,
-                new ProcessEventArgs(eventId, processId.Value,
-                    _optionsMonitor.CurrentValue.ProcessMonitor.ProcessName));
+
+            ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(
+                eventId,
+                processId.Value,
+                _optionsMonitor.CurrentValue.ProcessMonitor.ProcessName
+            ));
         }
         catch (Exception ex)
         {
@@ -94,11 +106,11 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         }
     }
 
-    private int? ExtractProcessId(EventRecord eventRecord)
+    private int? ExtractProcessId(EventRecord record)
     {
         try
         {
-            return (int?)eventRecord.Properties[1].Value;
+            return (int?)record.Properties[1].Value;
         }
         catch (Exception ex)
         {

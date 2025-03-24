@@ -4,5 +4,5 @@ namespace StarCraftKeyManager.Interfaces;
 
 public interface IEventWatcherFactory
 {
-    EventLogWatcher Create(EventLogQuery query);
+    IWrappedEventLogWatcher Create(EventLogQuery query);
 }

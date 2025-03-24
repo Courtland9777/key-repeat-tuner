@@ -29,9 +29,11 @@ public class ProcessEventWatcherTests
             }
         });
 
+        var mockWrappedWatcher = new Mock<IWrappedEventLogWatcher>();
+
         _mockWatcherFactory
             .Setup(f => f.Create(It.IsAny<EventLogQuery>()))
-            .Returns(Mock.Of<EventLogWatcher>());
+            .Returns(mockWrappedWatcher.Object);
 
         _watcher = new ProcessEventWatcher(
             _mockLogger.Object,
