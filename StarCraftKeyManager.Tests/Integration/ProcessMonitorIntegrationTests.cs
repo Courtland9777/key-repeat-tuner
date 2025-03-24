@@ -239,11 +239,10 @@ public class ProcessMonitorIntegrationTests
     }
 
     [Fact]
-    public async Task ProcessEventOccurred_ShouldHandleMultipleProcessStarts_WhenStarCraftStartsMultipleTimes()
+    public void ProcessEventOccurred_ShouldHandleMultipleProcessStarts_WhenStarCraftStartsMultipleTimes()
     {
         // Arrange
-        await _processMonitorService.StartAsync(CancellationToken.None);
-        _mockLogger.Invocations.Clear();
+        _mockLogger.Invocations.Clear(); // ensure clean state
 
         // Act
         _mockProcessEventWatcher.Raise(
@@ -255,7 +254,7 @@ public class ProcessMonitorIntegrationTests
             new ProcessEventArgs(4688, 5678, "starcraft.exe")
         );
 
-        // Assert
+        // Assert: The first tracked process triggers FastMode settings
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
@@ -267,12 +266,9 @@ public class ProcessMonitorIntegrationTests
 
 
     [Fact]
-    public async Task ProcessEventOccurred_ShouldHandleMultipleProcessExits_WhenStarCraftStopsMultipleTimes()
+    public void ProcessEventOccurred_ShouldHandleMultipleProcessExits_WhenStarCraftStopsMultipleTimes()
     {
         // Arrange
-        await _processMonitorService.StartAsync(CancellationToken.None);
-
-        // Simulate two tracked process starts
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
             new ProcessEventArgs(4688, 1234, "starcraft.exe")
@@ -281,6 +277,7 @@ public class ProcessMonitorIntegrationTests
             w => w.ProcessEventOccurred += null,
             new ProcessEventArgs(4688, 5678, "starcraft.exe")
         );
+
         _mockLogger.Invocations.Clear(); // clear logs before simulating exits
 
         // Act: stop first process
@@ -289,7 +286,7 @@ public class ProcessMonitorIntegrationTests
             new ProcessEventArgs(4689, 1234, "starcraft.exe")
         );
 
-        // Verify no "state changed to False" yet
+        // Assert: No state change yet
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
@@ -304,7 +301,7 @@ public class ProcessMonitorIntegrationTests
             new ProcessEventArgs(4689, 5678, "starcraft.exe")
         );
 
-        // Final assertion that the state transitioned to False
+        // Assert: Final state transition to false
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
