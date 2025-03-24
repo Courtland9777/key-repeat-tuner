@@ -4,7 +4,7 @@ using Moq;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
-using StarCraftKeyManager.Tests.MoqExtensions;
+using StarCraftKeyManager.Tests.TestHelpers;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;

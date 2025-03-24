@@ -9,32 +9,34 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly ILogger<ProcessEventWatcher> _logger;
     private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
+    private readonly IEventLogQueryBuilder _queryBuilder;
     private readonly IEventWatcherFactory _watcherFactory;
     private EventHandler<EventRecordWrittenEventArgs>? _eventHandler;
     private EventLogWatcher? _eventWatcher;
     private bool _isStarted;
 
-    public ProcessEventWatcher(ILogger<ProcessEventWatcher> logger, IOptionsMonitor<AppSettings> optionsMonitor,
-        IEventWatcherFactory watcherFactory)
+    public ProcessEventWatcher(
+        ILogger<ProcessEventWatcher> logger,
+        IOptionsMonitor<AppSettings> optionsMonitor,
+        IEventWatcherFactory watcherFactory,
+        IEventLogQueryBuilder queryBuilder)
     {
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _watcherFactory = watcherFactory;
+        _queryBuilder = queryBuilder;
     }
 
     public event EventHandler<ProcessEventArgs>? ProcessEventOccurred;
 
     public void Configure(string processName)
     {
-        const string query =
-            "<QueryList><Query Id='0' Path='Security'><Select Path='Security'>*[System[(EventID=4688 or EventID=4689)]]</Select></Query></QueryList>";
-        var eventQuery = new EventLogQuery("Security", PathType.LogName, query)
-        {
-            ReverseDirection = true
-        };
-        _eventWatcher = _watcherFactory.Create(eventQuery);
+        var query = _queryBuilder.BuildQuery();
+        _eventWatcher = _watcherFactory.Create(query);
         _eventHandler = EventWatcherOnEventRecordWritten;
+        _logger.LogInformation("Configured process watcher for {ProcessName}", processName);
     }
+
 
     public void Start()
     {
@@ -65,7 +67,7 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         Stop();
     }
 
-    internal void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
+    public void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
     {
         if (e.EventRecord == null) return;
 

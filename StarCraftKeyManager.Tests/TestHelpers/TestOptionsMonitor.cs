@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 
-namespace StarCraftKeyManager.Tests.MoqExtensions;
+namespace StarCraftKeyManager.Tests.TestHelpers;
 
 public class TestOptionsMonitor<T> : IOptionsMonitor<T>
 {

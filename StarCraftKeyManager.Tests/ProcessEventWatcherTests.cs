@@ -36,7 +36,8 @@ public class ProcessEventWatcherTests
         _watcher = new ProcessEventWatcher(
             _mockLogger.Object,
             _mockOptionsMonitor.Object,
-            _mockWatcherFactory.Object
+            _mockWatcherFactory.Object,
+            null!
         );
 
         _watcher.Configure("starcraft.exe");

@@ -2,7 +2,7 @@
 using Moq;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.MoqExtensions;
+namespace StarCraftKeyManager.Tests.TestHelpers;
 
 public static class MoqLogExtensions
 {
