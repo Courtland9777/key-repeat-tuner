@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Security.Principal;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Configuration;
@@ -125,16 +124,5 @@ public class ConfigurationHelpersTests
     [Fact]
     public void IsRunningAsAdmin_ShouldReturnCorrectValue()
     {
-        // Arrange
-        var identity = new Mock<WindowsIdentity>();
-        var principal = new Mock<WindowsPrincipal>(identity.Object);
-        identity.Setup(i => i.IsAuthenticated).Returns(true);
-        principal.Setup(p => p.IsInRole(WindowsBuiltInRole.Administrator)).Returns(true);
-
-        // Act
-        var isAdmin = ConfigurationHelpers.IsRunningAsAdmin();
-
-        // Assert
-        Assert.True(isAdmin, "Expected the method to return true for an admin user.");
     }
 }

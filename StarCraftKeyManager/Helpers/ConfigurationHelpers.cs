@@ -1,12 +1,13 @@
-﻿using System.Security.Principal;
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 using Serilog;
+using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.Validators;
+using StarCraftKeyManager.Wrappers;
 
 namespace StarCraftKeyManager.Helpers;
 
@@ -67,12 +68,8 @@ public static class ConfigurationHelpers
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
         services.AddSingleton<IEventWatcherFactory, EventWatcherFactory>();
         services.AddSingleton<IEventLogQueryBuilder, SecurityAuditQueryBuilder>();
-    }
-
-    public static bool IsRunningAsAdmin()
-    {
-        using var identity = WindowsIdentity.GetCurrent();
-        var principal = new WindowsPrincipal(identity);
-        return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        services.AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>();
+        services.AddSingleton<IProcessProvider, ProcessProvider>();
+        services.AddSingleton<IUserContext, UserContext>();
     }
 }

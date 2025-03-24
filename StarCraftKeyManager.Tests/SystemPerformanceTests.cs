@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
@@ -11,14 +12,18 @@ namespace StarCraftKeyManager.Tests;
 
 public class SystemPerformanceTests
 {
+    private readonly Mock<IKeyboardSettingsApplier> _mockKeyboardSettingsApplier;
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
+    private readonly Mock<IProcessProvider> _mockProcessProvider;
     private readonly ProcessMonitorService _processMonitorService;
 
     public SystemPerformanceTests()
     {
         _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
         _mockProcessEventWatcher = new Mock<IProcessEventWatcher>();
+        _mockKeyboardSettingsApplier = new Mock<IKeyboardSettingsApplier>();
+        _mockProcessProvider = new Mock<IProcessProvider>();
 
         var mockSettings = new AppSettings
         {
@@ -33,10 +38,16 @@ public class SystemPerformanceTests
         var mockOptionsMonitor = new Mock<IOptionsMonitor<AppSettings>>();
         mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockSettings);
 
+        _mockProcessProvider
+            .Setup(p => p.GetProcessIdsByName("starcraft"))
+            .Returns([]);
+
         _processMonitorService = new ProcessMonitorService(
             _mockLogger.Object,
             mockOptionsMonitor.Object,
-            _mockProcessEventWatcher.Object
+            _mockProcessEventWatcher.Object,
+            _mockKeyboardSettingsApplier.Object,
+            _mockProcessProvider.Object
         );
     }
 

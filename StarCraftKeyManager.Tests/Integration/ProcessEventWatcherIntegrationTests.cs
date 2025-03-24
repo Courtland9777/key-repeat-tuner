@@ -6,6 +6,7 @@ using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.Tests.TestHelpers;
+using StarCraftKeyManager.Wrappers;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;

@@ -6,6 +6,7 @@ using Moq;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
+using StarCraftKeyManager.Tests.TestHelpers;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests;
@@ -14,6 +15,7 @@ public class ProcessEventWatcherTests
 {
     private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger = new();
     private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptionsMonitor = new();
+    private readonly Mock<IEventLogQueryBuilder> _mockQueryBuilder = new();
     private readonly Mock<IEventWatcherFactory> _mockWatcherFactory = new();
     private readonly ProcessEventWatcher _watcher;
 
@@ -35,12 +37,14 @@ public class ProcessEventWatcherTests
             .Setup(f => f.Create(It.IsAny<EventLogQuery>()))
             .Returns(mockWrappedWatcher.Object);
 
+        var testQuery = new EventLogQuery("Security", PathType.LogName);
+        _mockQueryBuilder.Setup(q => q.BuildQuery()).Returns(testQuery);
+
         _watcher = new ProcessEventWatcher(
             _mockLogger.Object,
             _mockOptionsMonitor.Object,
             _mockWatcherFactory.Object,
-            null!
-        );
+            _mockQueryBuilder.Object);
 
         _watcher.Configure("starcraft.exe");
     }
@@ -72,11 +76,15 @@ public class ProcessEventWatcherTests
         var raised = 0;
         _watcher.ProcessEventOccurred += (_, _) => raised++;
 
-        _watcher.EventWatcherOnEventRecordWritten(this, CreateMockArgs(4688, 123));
-        _watcher.EventWatcherOnEventRecordWritten(this, CreateMockArgs(4689, 123));
+        var startArgs = FakeEventRecordFactory.WrapStartEvent("starcraft.exe");
+        var stopArgs = FakeEventRecordFactory.WrapStopEvent("starcraft.exe");
+
+        _watcher.EventWatcherOnEventRecordWritten(this, startArgs);
+        _watcher.EventWatcherOnEventRecordWritten(this, stopArgs);
 
         Assert.Equal(2, raised);
     }
+
 
     [Fact]
     public void Event_ShouldNotBeRaised_ForUnknownEventId()

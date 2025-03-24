@@ -1,18 +1,17 @@
 ﻿using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
+using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Interop;
 using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Services;
 
 internal sealed class ProcessMonitorService : BackgroundService
 {
+    private readonly IKeyboardSettingsApplier _keyboardSettingsApplier;
     private readonly ILogger<ProcessMonitorService> _logger;
     private readonly IProcessEventWatcher _processEventWatcher;
+    private readonly IProcessProvider _processProvider;
     private readonly ConcurrentDictionary<int, byte> _trackedProcesses = new();
 
     private bool _isRunning;
@@ -22,10 +21,14 @@ internal sealed class ProcessMonitorService : BackgroundService
     public ProcessMonitorService(
         ILogger<ProcessMonitorService> logger,
         IOptionsMonitor<AppSettings> optionsMonitor,
-        IProcessEventWatcher processEventWatcher)
+        IProcessEventWatcher processEventWatcher,
+        IKeyboardSettingsApplier keyboardSettingsApplier,
+        IProcessProvider processProvider)
     {
         _logger = logger;
         _processEventWatcher = processEventWatcher;
+        _keyboardSettingsApplier = keyboardSettingsApplier;
+        _processProvider = processProvider;
 
         var settings = optionsMonitor.CurrentValue;
         _processName = settings.ProcessMonitor.ProcessName;
@@ -55,18 +58,11 @@ internal sealed class ProcessMonitorService : BackgroundService
         {
             _logger.LogError(ex, "Failed to start process watcher.");
         }
-        finally
-        {
-            _logger.LogInformation("Stopping process monitor service.");
-            _processEventWatcher.Stop();
-            _processEventWatcher.ProcessEventOccurred -= OnProcessEventOccurred;
-        }
 
         var sanitizedProcessName = _processName.Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
-        var initialProcesses = Process.GetProcessesByName(sanitizedProcessName);
-
-        foreach (var process in initialProcesses)
-            _trackedProcesses.TryAdd(process.Id, 0);
+        var initialProcessIds = _processProvider.GetProcessIdsByName(sanitizedProcessName);
+        foreach (var pid in initialProcessIds)
+            _trackedProcesses.TryAdd(pid, 0);
 
         _isRunning = !_trackedProcesses.IsEmpty;
         _logger.LogInformation("Initial tracked processes: {Count}", _trackedProcesses.Count);
@@ -120,33 +116,6 @@ internal sealed class ProcessMonitorService : BackgroundService
     {
         var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
         _logger.LogInformation("Applying key repeat settings: {@Settings}", settings);
-        SetKeyboardRepeat(settings.RepeatSpeed, settings.RepeatDelay);
-    }
-
-    private void SetKeyboardRepeat(int repeatSpeed, int repeatDelay)
-    {
-        const uint spiSetkeyboardspeed = 0x000B;
-        const uint spiSetkeyboarddelay = 0x0017;
-
-        try
-        {
-            if (!NativeMethods.SystemParametersInfo(spiSetkeyboardspeed, (uint)repeatSpeed, 0, 0))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat speed.");
-
-            if (!NativeMethods.SystemParametersInfo(spiSetkeyboarddelay, (uint)(repeatDelay / 250), 0, 0))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to set keyboard repeat delay.");
-
-            _logger.LogInformation("Key repeat settings applied: Speed={Speed}, Delay={Delay}", repeatSpeed,
-                repeatDelay);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to apply key repeat settings.");
-        }
-    }
-
-    public async Task StartMonitoringAsync(CancellationToken cancellationToken = default)
-    {
-        await ExecuteAsync(cancellationToken);
+        _keyboardSettingsApplier.ApplyRepeatSettings(settings.RepeatSpeed, settings.RepeatDelay);
     }
 }

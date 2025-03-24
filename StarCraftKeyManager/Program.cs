@@ -1,4 +1,5 @@
 using Serilog;
+using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Helpers;
 
 Log.Logger = new LoggerConfiguration()
@@ -7,30 +8,21 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    if (!ConfigurationHelpers.IsRunningAsAdmin())
+    var builder = Host.CreateApplicationBuilder(args);
+    builder.SetServiceName();
+    builder.AddAppSettingsJson();
+    builder.ConfigureSerilog();
+    builder.AddApplicationServices();
+
+    using var app = builder.Build();
+
+    var userContext = app.Services.GetRequiredService<IUserContext>();
+    if (!userContext.IsAdministrator())
     {
         Log.Error("Application is not running as administrator. Please run as administrator.");
         Environment.ExitCode = 1;
         return;
     }
-
-    var builder = Host.CreateApplicationBuilder(args);
-    builder.SetServiceName();
-    builder.AddAppSettingsJson();
-    builder.ConfigureSerilog();
-
-    try
-    {
-        builder.AddApplicationServices(); // Validate settings inside this method
-    }
-    catch (InvalidOperationException ex)
-    {
-        Log.Fatal(ex, "Configuration validation failed. The application will exit.");
-        Environment.ExitCode = 1;
-        return;
-    }
-
-    using var app = builder.Build();
 
     var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
     lifetime.ApplicationStopping.Register(() => Log.Information("Application stopping..."));

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
@@ -11,14 +12,19 @@ namespace StarCraftKeyManager.Tests.Integration;
 
 public class ProcessMonitorIntegrationTests
 {
+    private readonly KeyRepeatSettings _keyRepeatSettings;
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
-    private ProcessMonitorService _processMonitorService;
+    private readonly ProcessMonitorService _processMonitorService;
+    private readonly string _processName;
 
     public ProcessMonitorIntegrationTests()
     {
         _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
         _mockProcessEventWatcher = new Mock<IProcessEventWatcher>();
+
+        var mockKeyboardSettingsApplier = new Mock<IKeyboardSettingsApplier>();
+        var mockProcessProvider = new Mock<IProcessProvider>();
 
         var mockSettings = new AppSettings
         {
@@ -34,11 +40,20 @@ public class ProcessMonitorIntegrationTests
         mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockSettings);
         var optionsMonitor = mockOptionsMonitor.Object;
 
+        mockProcessProvider
+            .Setup(p => p.GetProcessIdsByName("starcraft"))
+            .Returns([]);
+
         _processMonitorService = new ProcessMonitorService(
             _mockLogger.Object,
             optionsMonitor,
-            _mockProcessEventWatcher.Object
+            _mockProcessEventWatcher.Object,
+            mockKeyboardSettingsApplier.Object,
+            mockProcessProvider.Object
         );
+
+        _processName = mockSettings.ProcessMonitor.ProcessName;
+        _keyRepeatSettings = mockSettings.KeyRepeat;
     }
 
     [Fact]
@@ -101,11 +116,11 @@ public class ProcessMonitorIntegrationTests
         };
 
         var optionsMonitor = new TestOptionsMonitor<AppSettings>(settings);
-        _processMonitorService = new ProcessMonitorService(
-            _mockLogger.Object,
-            optionsMonitor,
-            _mockProcessEventWatcher.Object
-        );
+        //_processMonitorService = new ProcessMonitorService(
+        //    _mockLogger.Object,
+        //    optionsMonitor,
+        //    _mockProcessEventWatcher.Object
+        //);
 
         await _processMonitorService.StartAsync(CancellationToken.None);
         _mockLogger.Invocations.Clear(); // isolate log output to what we trigger next
@@ -160,11 +175,11 @@ public class ProcessMonitorIntegrationTests
         var mockWatcher = new Mock<IProcessEventWatcher>();
 
         // Act: construct the service (registers for changes)
-        var _ = new ProcessMonitorService(
-            mockLogger.Object,
-            optionsMonitor,
-            mockWatcher.Object
-        );
+        //var _ = new ProcessMonitorService(
+        //    mockLogger.Object,
+        //    optionsMonitor,
+        //    mockWatcher.Object
+        //);
 
         // Trigger the change manually
         optionsMonitor.TriggerChange(updatedSettings);

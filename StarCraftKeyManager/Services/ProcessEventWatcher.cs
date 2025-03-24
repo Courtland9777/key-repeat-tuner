@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.Eventing.Reader;
 using Microsoft.Extensions.Options;
+using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 
@@ -115,6 +116,53 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error extracting process ID from event record.");
+            return null;
+        }
+    }
+
+    public void HandleEvent(IWrappedEventRecordWrittenEventArgs e)
+    {
+        if (e.EventRecord == null)
+        {
+            _logger.LogWarning("Null EventRecord received from event log.");
+            return;
+        }
+
+        try
+        {
+            var eventId = e.EventRecord.Id;
+            var processId = ExtractProcessId(e.EventRecord);
+
+            if (processId == null)
+            {
+                _logger.LogWarning("Missing required properties from wrapped event record.");
+                return;
+            }
+
+            _logger.LogInformation("Detected process event: EventId={EventId}, ProcessId={ProcessId}", eventId,
+                processId);
+
+            ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(
+                eventId,
+                processId.Value,
+                _optionsMonitor.CurrentValue.ProcessMonitor.ProcessName
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing wrapped event record.");
+        }
+    }
+
+    private int? ExtractProcessId(IWrappedEventRecord record)
+    {
+        try
+        {
+            return record.Properties.Count > 1 ? Convert.ToInt32(record.Properties[1]) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting process ID from wrapped event record.");
             return null;
         }
     }
