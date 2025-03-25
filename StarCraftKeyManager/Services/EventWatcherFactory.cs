@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.Eventing.Reader;
 using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Wrappers;
+using StarCraftKeyManager.SystemAdapters.Wrappers;
 
 namespace StarCraftKeyManager.Services;
 

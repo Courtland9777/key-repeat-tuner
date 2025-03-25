@@ -6,11 +6,9 @@ using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
-using StarCraftKeyManager.Tests.TestHelpers;
-using StarCraftKeyManager.Wrappers;
+using StarCraftKeyManager.SystemAdapters.Wrappers;
+using StarCraftKeyManager.Tests.TestUtilities.Extensions;
 using Xunit;
-
-ng Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
 
@@ -113,7 +111,7 @@ public class ProcessEventWatcherIntegrationTests
                 It.IsAny<EventId>(),
                 MoqLogExtensions.MatchLogState("Process event watcher started."),
                 null,
-                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -148,12 +146,11 @@ public class ProcessEventWatcherIntegrationTests
 
         // Assert
         mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Process event watcher started."),
-                null,
-                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Process event watcher started."),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
 
 
@@ -187,12 +184,11 @@ public class ProcessEventWatcherIntegrationTests
         mockWatcher.Verify(w => w.Dispose(), Times.Once);
 
         mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Process event watcher stopped."),
-                null,
-                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Process event watcher stopped."),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
 
 
@@ -262,7 +258,7 @@ public class ProcessEventWatcherIntegrationTests
                 It.IsAny<EventId>(),
                 MoqLogExtensions.MatchLogState("Process event watcher stopped."),
                 null,
-                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -342,7 +338,8 @@ public class ProcessEventWatcherIntegrationTests
     }
 
     [Fact]
-    public void Start_ShouldNotThrow_WhenEventWatcherIsNull()
-   {
+    public void Start_ShouldNotThrow_WhenEventWatcherIsNull()
+
+    {
     }
 }

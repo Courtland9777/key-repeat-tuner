@@ -6,6 +6,7 @@ using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
+using StarCraftKeyManager.Wrappers;
 
 namespace StarCraftKeyManager.Extensions;
 

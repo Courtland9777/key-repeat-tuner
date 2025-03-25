@@ -4,11 +4,14 @@ using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
-using StarCraftKeyManager.Tests.TestHelpers;
+using StarCraftKeyManager.Tests.Configuration;
+using StarCraftKeyManager.Tests.TestUtilities.Extensions;
 using StarCraftKeyManager.Tests.TestUtilities.Fakes;
+using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Services;

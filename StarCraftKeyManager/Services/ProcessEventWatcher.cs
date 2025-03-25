@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 
 namespace StarCraftKeyManager.Services;

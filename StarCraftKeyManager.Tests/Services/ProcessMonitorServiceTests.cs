@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Adapters;
+using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
@@ -40,7 +42,7 @@ public class ProcessMonitorServiceTests
 
         _mockProcessProvider
             .Setup(p => p.GetProcessIdsByName("starcraft"))
-            .Returns(Array.Empty<int>());
+            .Returns([]);
 
         _processMonitorService = new ProcessMonitorService(
             _mockLogger.Object,

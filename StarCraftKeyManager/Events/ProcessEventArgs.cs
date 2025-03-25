@@ -1,4 +1,4 @@
-﻿namespace StarCraftKeyManager.Models;
+﻿namespace StarCraftKeyManager.Events;
 
 public class ProcessEventArgs : EventArgs
 {
