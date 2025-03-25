@@ -1,6 +1,4 @@
-﻿using StarCraftKeyManager.Models;
-
-namespace StarCraftKeyManager.Interfaces;
+﻿namespace StarCraftKeyManager.Interfaces;
 
 public interface IProcessEventWatcher : IDisposable
 {

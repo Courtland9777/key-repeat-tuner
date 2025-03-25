@@ -7,7 +7,7 @@ using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests;
+namespace StarCraftKeyManager.Tests.Services;
 
 public class ProcessMonitorServiceTests
 {

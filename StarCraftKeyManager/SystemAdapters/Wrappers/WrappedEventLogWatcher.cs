@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.Eventing.Reader;
 using StarCraftKeyManager.Interfaces;
 
-namespace StarCraftKeyManager.Wrappers;
+namespace StarCraftKeyManager.SystemAdapters.Wrappers;
 
 internal sealed class WrappedEventLogWatcher : IWrappedEventLogWatcher
 {

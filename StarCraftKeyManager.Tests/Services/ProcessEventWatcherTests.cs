@@ -1,16 +1,17 @@
 ﻿using System.Diagnostics.Eventing.Reader;
-using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Adapters;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.Tests.TestHelpers;
+using StarCraftKeyManager.Tests.TestUtilities.Fakes;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests;
+namespace StarCraftKeyManager.Tests.Services;
 
 public class ProcessEventWatcherTests
 {
@@ -207,36 +208,5 @@ public class ProcessEventWatcherTests
 
         // Assert
         Assert.Equal(5, count);
-    }
-
-
-    private static EventRecordWrittenEventArgs CreateMockArgs(int eventId, int? processId)
-    {
-        var mockRecord = new Mock<EventRecord>();
-        mockRecord.Setup(r => r.Id).Returns(eventId);
-
-        mockRecord.Setup(r => r.Properties).Returns(processId is not null
-            ?
-            [
-                CreateEventProp(0),
-                CreateEventProp(processId.Value),
-                CreateEventProp("some.exe")
-            ]
-            : []);
-
-        var mockArgs = new Mock<EventRecordWrittenEventArgs>();
-        mockArgs.Setup(a => a.EventRecord).Returns(mockRecord.Object);
-        return mockArgs.Object;
-    }
-
-    private static EventProperty CreateEventProp(object value)
-    {
-        return (EventProperty)Activator.CreateInstance(
-            typeof(EventProperty),
-            BindingFlags.NonPublic | BindingFlags.Instance,
-            null,
-            [value],
-            null
-        )!;
     }
 }

@@ -2,12 +2,15 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.Tests.TestHelpers;
 using StarCraftKeyManager.Wrappers;
 using Xunit;
+
+ng Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
 
@@ -110,7 +113,7 @@ public class ProcessEventWatcherIntegrationTests
                 It.IsAny<EventId>(),
                 MoqLogExtensions.MatchLogState("Process event watcher started."),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -149,7 +152,7 @@ public class ProcessEventWatcherIntegrationTests
                 It.IsAny<EventId>(),
                 MoqLogExtensions.MatchLogState("Process event watcher started."),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -188,7 +191,7 @@ public class ProcessEventWatcherIntegrationTests
                 It.IsAny<EventId>(),
                 MoqLogExtensions.MatchLogState("Process event watcher stopped."),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -259,7 +262,7 @@ public class ProcessEventWatcherIntegrationTests
                 It.IsAny<EventId>(),
                 MoqLogExtensions.MatchLogState("Process event watcher stopped."),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                IIt.IsAnyType<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -339,7 +342,7 @@ public class ProcessEventWatcherIntegrationTests
     }
 
     [Fact]
-    public void Start_ShouldNotThrow_WhenEventWatcherIsNull()
-    {
+    public void Start_ShouldNotThrow_WhenEventWatcherIsNull()
+   {
     }
 }

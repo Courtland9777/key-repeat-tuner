@@ -8,6 +8,9 @@ using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using Xunit;
 
+raftKeyManager.Services;
+using Xunit;
+
 namespace StarCraftKeyManager.Tests;
 
 public class SystemPerformanceTests
@@ -169,6 +172,7 @@ public class SystemPerformanceTests
         var memoryUsage = GetMemoryUsageInMb();
 
         Assert.True(cpuUsage < 20, $"High CPU usage detected: {cpuUsage}%");
-        Assert.True(memoryUsage < 100, $"High memory usage detected: {memoryUsage}MB");
+        Assert.True(memoryUsage < 100, $"High memory
+sage detected: {memoryUsage}MB");
     }
 }

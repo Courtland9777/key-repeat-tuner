@@ -1,6 +1,11 @@
 ﻿using StarCraftKeyManager.Models;
 
-namespace StarCraftKeyManager.Tests.TestHelpers;
+on;
+using StarCraftKeyManager.Models;
+
+namesp
+
+StarCraftKeyManager.Tests.TestHelpers;
 
 public static class AppSettingsFactory
 {
@@ -12,7 +17,8 @@ public static class AppSettingsFactory
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay
+ 500 }
             }
         };
     }

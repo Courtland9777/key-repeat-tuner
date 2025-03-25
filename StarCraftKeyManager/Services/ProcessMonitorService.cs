@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Adapters;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 

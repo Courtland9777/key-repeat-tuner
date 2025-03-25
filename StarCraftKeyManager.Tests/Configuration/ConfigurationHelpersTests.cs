@@ -6,13 +6,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StarCraftKeyManager.Helpers;
+using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Extensions;
 using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests;
+namespace StarCraftKeyManager.Tests.Configuration;
 
 public class ConfigurationHelpersTests
 {

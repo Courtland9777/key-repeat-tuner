@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Options;
 using Moq;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Models;
-using StarCraftKeyManager.Validators;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests;
+namespace StarCraftKeyManager.Tests.Configuration;
 
 public class AppSettingsTests
 {

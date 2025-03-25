@@ -3,13 +3,11 @@ using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 using Serilog;
 using StarCraftKeyManager.Adapters;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
-using StarCraftKeyManager.Validators;
-using StarCraftKeyManager.Wrappers;
 
-namespace StarCraftKeyManager.Helpers;
+namespace StarCraftKeyManager.Extensions;
 
 public static class ConfigurationHelpers
 {

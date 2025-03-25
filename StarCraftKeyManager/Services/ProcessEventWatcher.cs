@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics.Eventing.Reader;
 using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Adapters;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Services;
 

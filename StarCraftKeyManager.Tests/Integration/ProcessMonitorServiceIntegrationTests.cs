@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Adapters;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
@@ -10,7 +11,7 @@ using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
 
-public class ProcessMonitorIntegrationTests
+public class ProcessMonitorServiceIntegrationTests
 {
     private readonly KeyRepeatSettings _keyRepeatSettings;
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
@@ -18,7 +19,7 @@ public class ProcessMonitorIntegrationTests
     private readonly ProcessMonitorService _processMonitorService;
     private readonly string _processName;
 
-    public ProcessMonitorIntegrationTests()
+    public ProcessMonitorServiceIntegrationTests()
     {
         _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
         _mockProcessEventWatcher = new Mock<IProcessEventWatcher>();

@@ -1,6 +1,6 @@
 using Serilog;
 using StarCraftKeyManager.Adapters;
-using StarCraftKeyManager.Helpers;
+using StarCraftKeyManager.Extensions;
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(new ConfigurationBuilder().AddJsonFile("appsettings.json", true, true).Build())

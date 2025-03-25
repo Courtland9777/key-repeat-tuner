@@ -1,6 +1,6 @@
 ﻿using StarCraftKeyManager.Adapters;
 
-namespace StarCraftKeyManager.Tests.TestHelpers;
+namespace StarCraftKeyManager.Tests.TestUtilities.Fakes;
 
 public sealed class FakeWrappedEventRecord : IWrappedEventRecord
 {

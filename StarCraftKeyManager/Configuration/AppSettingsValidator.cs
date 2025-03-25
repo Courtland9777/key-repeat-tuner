@@ -1,7 +1,6 @@
 ﻿using FluentValidation;
-using StarCraftKeyManager.Models;
 
-namespace StarCraftKeyManager.Validators;
+namespace StarCraftKeyManager.Configuration;
 
 public class AppSettingsValidator : AbstractValidator<AppSettings>
 {
