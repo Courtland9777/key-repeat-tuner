@@ -10,32 +10,17 @@ using StarCraftKeyManager.Wrappers;
 
 namespace StarCraftKeyManager.Extensions;
 
-public static class ConfigurationHelpers
+public static class ServiceCollectionExtensions
 {
     public static void AddAppSettingsJson(this IHostApplicationBuilder builder)
     {
         builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
     }
 
-    public static void SetServiceName(this IHostApplicationBuilder builder)
-    {
-        builder.Services.Configure<WindowsServiceLifetimeOptions>(options =>
-            options.ServiceName = "StarCraft Key Manager");
-    }
-
-    public static void ConfigureSerilog(this IHostApplicationBuilder builder)
-    {
-        builder.Logging.ClearProviders(); // Remove default logging providers
-        builder.Logging.AddSerilog(new LoggerConfiguration()
-            .ReadFrom.Configuration(builder.Configuration)
-            .CreateLogger());
-    }
-
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddValidatorsFromAssemblyContaining<AppSettingsValidator>();
 
-        // Validate configuration
         using var serviceProvider = builder.Services.BuildServiceProvider();
         var appSettings = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
         var validator = serviceProvider.GetRequiredService<IValidator<AppSettings>>();

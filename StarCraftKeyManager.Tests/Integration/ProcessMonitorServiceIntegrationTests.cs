@@ -18,8 +18,8 @@ public class ProcessMonitorServiceIntegrationTests
     private readonly KeyRepeatSettings _keyRepeatSettings;
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
-    private readonly ProcessMonitorService _processMonitorService;
     private readonly string _processName;
+    private ProcessMonitorService _processMonitorService;
 
     public ProcessMonitorServiceIntegrationTests()
     {
@@ -119,11 +119,15 @@ public class ProcessMonitorServiceIntegrationTests
         };
 
         var optionsMonitor = new TestOptionsMonitor<AppSettings>(settings);
-        //_processMonitorService = new ProcessMonitorService(
-        //    _mockLogger.Object,
-        //    optionsMonitor,
-        //    _mockProcessEventWatcher.Object
-        //);
+        var mockKeyboardSettingsApplier = new Mock<IKeyboardSettingsApplier>();
+        var mockProcessProvider = new Mock<IProcessProvider>();
+        _processMonitorService = new ProcessMonitorService(
+            _mockLogger.Object,
+            optionsMonitor,
+            _mockProcessEventWatcher.Object,
+            mockKeyboardSettingsApplier.Object,
+            mockProcessProvider.Object
+        );
 
         await _processMonitorService.StartAsync(CancellationToken.None);
         _mockLogger.Invocations.Clear(); // isolate log output to what we trigger next
