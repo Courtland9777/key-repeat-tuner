@@ -3,6 +3,7 @@ using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
@@ -21,15 +22,7 @@ public class ProcessEventWatcherTests
 
     public ProcessEventWatcherTests()
     {
-        _mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(new AppSettings
-        {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
-            }
-        });
+        _mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(AppSettingsFactory.CreateDefault());
 
         var mockWrappedWatcher = new Mock<IWrappedEventLogWatcher>();
 
@@ -79,32 +72,88 @@ public class ProcessEventWatcherTests
         var startArgs = FakeEventRecordFactory.WrapStartEvent("starcraft.exe");
         var stopArgs = FakeEventRecordFactory.WrapStopEvent("starcraft.exe");
 
-        _watcher.EventWatcherOnEventRecordWritten(this, startArgs);
-        _watcher.EventWatcherOnEventRecordWritten(this, stopArgs);
+        _watcher.HandleEvent(startArgs);
+        _watcher.HandleEvent(stopArgs);
 
         Assert.Equal(2, raised);
     }
 
 
     [Fact]
-    public void Event_ShouldNotBeRaised_ForUnknownEventId()
+    public void Event_ShouldBeRaised_ButNotTriggerKeySettings_ForUnknownEventId()
     {
+        // Arrange
         var raised = false;
         _watcher.ProcessEventOccurred += (_, _) => raised = true;
 
-        _watcher.EventWatcherOnEventRecordWritten(this, CreateMockArgs(9999, 123));
+        var unknownEvent = new FakeWrappedEventRecordWrittenEventArgs(9999, "starcraft.exe");
 
-        Assert.False(raised);
+        // Act
+        _watcher.HandleEvent(unknownEvent);
+
+        // Assert
+        Assert.True(raised);
     }
+
+    [Fact]
+    public async Task OnProcessEventOccurred_ShouldNotApplySettings_ForUnknownEventId()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<ProcessMonitorService>>();
+        var mockEventWatcher = new Mock<IProcessEventWatcher>();
+        var mockKeyboardSettings = new Mock<IKeyboardSettingsApplier>();
+        var mockProcessProvider = new Mock<IProcessProvider>();
+
+        var settings = new AppSettings
+        {
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+            }
+        };
+
+        var optionsMonitor = new TestOptionsMonitor<AppSettings>(settings);
+
+        mockProcessProvider
+            .Setup(p => p.GetProcessIdsByName("starcraft"))
+            .Returns([]);
+
+        var service = new ProcessMonitorService(
+            mockLogger.Object,
+            optionsMonitor,
+            mockEventWatcher.Object,
+            mockKeyboardSettings.Object,
+            mockProcessProvider.Object
+        );
+
+        await service.StartAsync(CancellationToken.None);
+
+        mockKeyboardSettings.Invocations.Clear();
+
+        // Act
+        mockEventWatcher.Raise(
+            w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(9999, 1234, "starcraft.exe")
+        );
+
+        // Assert
+        mockKeyboardSettings.Verify(k =>
+            k.ApplyRepeatSettings(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
 
     [Fact]
     public void ShouldLogWarning_WhenEventRecordIsNull()
     {
-        var mockArgs = new Mock<EventRecordWrittenEventArgs>();
-        mockArgs.Setup(a => a.EventRecord).Returns((EventRecord?)null!);
+        // Arrange
+        var fakeArgs = new FakeWrappedEventRecordWrittenEventArgs(null);
 
-        _watcher.EventWatcherOnEventRecordWritten(this, mockArgs.Object);
+        // Act
+        _watcher.HandleEvent(fakeArgs);
 
+        // Assert
         _mockLogger.Verify(l => l.Log(
             LogLevel.Warning,
             It.IsAny<EventId>(),
@@ -116,46 +165,50 @@ public class ProcessEventWatcherTests
     [Fact]
     public void ShouldLogError_WhenProcessIdExtractionFails()
     {
-        var mockRecord = new Mock<EventRecord>();
-        mockRecord.Setup(r => r.Id).Returns(4688);
-        mockRecord.Setup(r => r.Properties).Returns([]); // Missing required indexes
+        // Arrange
+        var record = new FakeWrappedEventRecord(4688, "not-a-number", "starcraft.exe");
+        var args = new FakeWrappedEventRecordWrittenEventArgs(record);
 
-        var mockArgs = new Mock<EventRecordWrittenEventArgs>();
-        mockArgs.Setup(e => e.EventRecord).Returns(mockRecord.Object);
+        // Act
+        _watcher.HandleEvent(args);
 
-        _watcher.EventWatcherOnEventRecordWritten(this, mockArgs.Object);
-
+        // Assert: verify log message using MoqLogExtensions
         _mockLogger.Verify(l => l.Log(
             LogLevel.Error,
             It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Error extracting process ID")),
-            null,
+            MoqLogExtensions.MatchLogState("Error extracting process ID from wrapped event record"),
+            It.IsAny<Exception>(),
             It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
+
 
     [Fact]
     public async Task MultipleEvents_ShouldAllTriggerEvent()
     {
+        // Arrange
         var count = 0;
         _watcher.ProcessEventOccurred += (_, _) => count++;
 
-        IEnumerable<EventRecordWrittenEventArgs> events =
-        [
-            CreateMockArgs(4688, 1),
-            CreateMockArgs(4688, 2),
-            CreateMockArgs(4689, 1),
-            CreateMockArgs(4689, 2),
-            CreateMockArgs(4688, 3)
-        ];
+        var events = new List<IWrappedEventRecordWrittenEventArgs>
+        {
+            new FakeWrappedEventRecordWrittenEventArgs(new FakeWrappedEventRecord(4688, 1, "starcraft.exe")),
+            new FakeWrappedEventRecordWrittenEventArgs(new FakeWrappedEventRecord(4688, 2, "starcraft.exe")),
+            new FakeWrappedEventRecordWrittenEventArgs(new FakeWrappedEventRecord(4689, 1, "starcraft.exe")),
+            new FakeWrappedEventRecordWrittenEventArgs(new FakeWrappedEventRecord(4689, 2, "starcraft.exe")),
+            new FakeWrappedEventRecordWrittenEventArgs(new FakeWrappedEventRecord(4688, 3, "starcraft.exe"))
+        };
 
+        // Act
         await Task.Run(() =>
         {
             foreach (var e in events)
-                _watcher.EventWatcherOnEventRecordWritten(this, e);
+                _watcher.HandleEvent(e);
         });
 
+        // Assert
         Assert.Equal(5, count);
     }
+
 
     private static EventRecordWrittenEventArgs CreateMockArgs(int eventId, int? processId)
     {
