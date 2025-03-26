@@ -16,6 +16,12 @@ public sealed class FakeWrappedEventRecord : IWrappedEventRecord
         Properties = new List<object?> { null, invalidProcessId, processName };
     }
 
+    public FakeWrappedEventRecord(int id, IReadOnlyList<object?> customProperties)
+    {
+        Id = id;
+        Properties = customProperties;
+    }
+
     public int Id { get; }
     public IReadOnlyList<object?> Properties { get; }
 }
