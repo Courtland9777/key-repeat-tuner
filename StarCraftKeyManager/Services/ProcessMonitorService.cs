@@ -55,6 +55,7 @@ internal sealed class ProcessMonitorService : BackgroundService
         {
             _logger.LogInformation("Starting process monitor service.");
             _processEventWatcher.Start();
+            _logger.LogInformation("Monitoring process: {ProcessName}", _processName);
         }
         catch (Exception ex)
         {
@@ -117,7 +118,11 @@ internal sealed class ProcessMonitorService : BackgroundService
     internal void ApplyKeyRepeatSettings()
     {
         var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
-        _logger.LogInformation("Applying key repeat settings: {@Settings}", settings);
+        _logger.LogInformation("Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}",
+            _isRunning ? "FastMode" : "Default",
+            settings.RepeatSpeed,
+            settings.RepeatDelay);
+
         _keyboardSettingsApplier.ApplyRepeatSettings(settings.RepeatSpeed, settings.RepeatDelay);
     }
 }
