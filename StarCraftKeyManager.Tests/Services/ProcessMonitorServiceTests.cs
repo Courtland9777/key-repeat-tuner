@@ -383,4 +383,25 @@ public class ProcessMonitorServiceTests
             null,
             It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
+
+    [Fact]
+    public void ProcessEventOccurred_ShouldNotChangeState_WhenDuplicateStartOrStopReceived()
+    {
+        // Arrange
+        _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "starcraft.exe")); // add
+        _mockLogger.Invocations.Clear();
+
+        // Act: Send duplicate start
+        _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
+            new ProcessEventArgs(4688, 1234, "starcraft.exe")); // no state change
+
+        // Assert
+        _mockLogger.Verify(l => l.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Process running state changed"),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
+    }
 }
