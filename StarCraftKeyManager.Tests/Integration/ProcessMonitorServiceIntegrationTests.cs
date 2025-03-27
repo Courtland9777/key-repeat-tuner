@@ -96,11 +96,10 @@ public class ProcessMonitorServiceIntegrationTests
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState(
-                    "Applying key repeat settings: StarCraftKeyManager.Models.KeyRepeatState"),
+                MoqLogExtensions.MatchLogState("Applying key repeat settings: Mode="),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.AtLeastOnce);
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), // <-- this fixes the nullability issue
+            Times.Exactly(2));
     }
 
 
@@ -144,12 +143,11 @@ public class ProcessMonitorServiceIntegrationTests
 
         // Assert: default settings should be restored
         _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Process running state changed to False"),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Process running state changed to False"),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(2));
     }
 
 
@@ -177,28 +175,31 @@ public class ProcessMonitorServiceIntegrationTests
             }
         };
 
-        var optionsMonitor = new TestOptionsMonitor<AppSettings>(initialSettings);
         var mockLogger = new Mock<ILogger<ProcessMonitorService>>();
         var mockWatcher = new Mock<IProcessEventWatcher>();
+        var mockApplier = new Mock<IKeyboardSettingsApplier>();
+        var mockProvider = new Mock<IProcessProvider>();
 
-        // Act: construct the service (registers for changes)
-        //var _ = new ProcessMonitorService(
-        //    mockLogger.Object,
-        //    optionsMonitor,
-        //    mockWatcher.Object
-        //);
+        var testMonitor = new TestOptionsMonitor<AppSettings>(initialSettings);
 
-        // Trigger the change manually
-        optionsMonitor.TriggerChange(updatedSettings);
+        var _ = new ProcessMonitorService(
+            mockLogger.Object,
+            testMonitor,
+            mockWatcher.Object,
+            mockApplier.Object,
+            mockProvider.Object
+        );
 
-        // Assert: logging occurred
+        // Act
+        testMonitor.TriggerChange(updatedSettings);
+
+        // Assert
         mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Configuration updated"),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Configuration updated"),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
 
 
