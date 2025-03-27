@@ -47,7 +47,7 @@ public class LoggingTests
         // Assert
         var logEvent = _sink.LogEvents.FirstOrDefault();
         Assert.NotNull(logEvent);
-        Assert.Contains("User TestUser performed an action", logEvent.RenderMessage());
+        Assert.Contains("User \"TestUser\" performed an action", logEvent.RenderMessage());
         Assert.True(logEvent.Timestamp != default, "Expected log entry to contain a timestamp.");
     }
 

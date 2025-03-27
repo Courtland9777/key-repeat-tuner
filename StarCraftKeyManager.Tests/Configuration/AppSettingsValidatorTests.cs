@@ -1,12 +1,11 @@
-﻿using Microsoft.Extensions.Options;
-using Moq;
-using StarCraftKeyManager.Configuration;
+﻿using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Models;
+using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Configuration;
 
-public class AppSettingsTests
+public class AppSettingsValidatorTests
 {
     private readonly AppSettingsValidator _validator = new();
 
@@ -45,14 +44,16 @@ public class AppSettingsTests
 
         Assert.False(result.IsValid, "Expected configuration to be invalid due to empty ProcessMonitor.ProcessName.");
         Assert.Contains(result.Errors,
-            e => e.PropertyName == "ProcessMonitor.ProcessName" && e.ErrorMessage.Contains("required"));
+            e => e.PropertyName == "ProcessMonitor.ProcessName" &&
+                 e.ErrorMessage == "ProcessName must be specified.");
     }
+
 
     [Fact]
     public void ChangingAppSettings_ShouldTriggerValidation()
     {
-        var options = new Mock<IOptionsMonitor<AppSettings>>();
-        var settings = new AppSettings
+        // Arrange
+        var initialSettings = new AppSettings
         {
             ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
             KeyRepeat = new KeyRepeatSettings
@@ -62,29 +63,35 @@ public class AppSettingsTests
             }
         };
 
-        options.Setup(o => o.CurrentValue).Returns(settings);
-
-        var eventTriggered = false;
-        options.Setup(o => o.OnChange(It.IsAny<Action<AppSettings>>()))
-            .Callback<Action<AppSettings>>(callback =>
+        var updatedSettings = new AppSettings
+        {
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "" }, // Invalid
+            KeyRepeat = new KeyRepeatSettings
             {
-                eventTriggered = true;
-                callback(new AppSettings
-                {
-                    ProcessMonitor = new ProcessMonitorSettings
-                    {
-                        ProcessName = ""
-                    },
-                    KeyRepeat = new KeyRepeatSettings
-                    {
-                        Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                        FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
-                    }
-                });
-            });
+                Default = new KeyRepeatState { RepeatSpeed = 50, RepeatDelay = 2000 }, // Invalid
+                FastMode = new KeyRepeatState { RepeatSpeed = -1, RepeatDelay = 100 } // Invalid
+            }
+        };
 
-        Assert.True(eventTriggered, "Expected OnChange event to trigger when settings change.");
+        var optionsMonitor = new TestOptionsMonitor<AppSettings>(initialSettings);
+        var validator = new AppSettingsValidator();
+
+        var initialResult = validator.Validate(optionsMonitor.CurrentValue);
+        Assert.True(initialResult.IsValid);
+
+        // Act
+        optionsMonitor.TriggerChange(updatedSettings);
+        var updatedResult = validator.Validate(optionsMonitor.CurrentValue);
+
+        // Assert
+        Assert.False(updatedResult.IsValid);
+        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "ProcessMonitor.ProcessName");
+        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.Default.RepeatSpeed");
+        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.Default.RepeatDelay");
+        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.FastMode.RepeatSpeed");
+        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.FastMode.RepeatDelay");
     }
+
 
     [Theory]
     [InlineData(-1, 1000)] // RepeatSpeed too low
@@ -113,8 +120,9 @@ public class AppSettingsTests
     [Fact]
     public void MissingProcessMonitor_ShouldFailValidation()
     {
-        var invalidSettings = new AppSettings
+        var settings = new AppSettings
         {
+            ProcessMonitor = null!, // Invalid
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -122,11 +130,12 @@ public class AppSettingsTests
             }
         };
 
-        var result = _validator.Validate(invalidSettings);
+        var result = _validator.Validate(settings);
 
         Assert.False(result.IsValid, "Expected configuration to be invalid due to missing ProcessMonitor.");
-        Assert.Contains(result.Errors, e => e.PropertyName == "ProcessMonitor" && e.ErrorMessage.Contains("required"));
+        Assert.Contains(result.Errors, e => e.PropertyName == "ProcessMonitor");
     }
+
 
     [Fact]
     public void MissingKeyRepeatSettings_ShouldFailValidation()
@@ -136,16 +145,18 @@ public class AppSettingsTests
             ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+                Default = null!,
+                FastMode = null!
             }
         };
 
         var result = _validator.Validate(invalidSettings);
 
         Assert.False(result.IsValid, "Expected configuration to be invalid due to missing KeyRepeat settings.");
-        Assert.Contains(result.Errors, e => e.PropertyName == "KeyRepeat" && e.ErrorMessage.Contains("required"));
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("Default key repeat settings must be provided."));
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("FastMode key repeat settings must be provided."));
     }
+
 
     [Fact]
     public void MissingDefaultKeyRepeatState_ShouldFailValidation()
@@ -155,16 +166,18 @@ public class AppSettingsTests
             ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = null!,
+                Default = null!, // trigger validation error
                 FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
             }
         };
 
         var result = _validator.Validate(invalidSettings);
 
-        Assert.False(result.IsValid, "Expected configuration to be invalid due to missing Default KeyRepeat state.");
-        Assert.Contains(result.Errors, e => e.PropertyName.Contains("Default") && e.ErrorMessage.Contains("required"));
+        Assert.False(result.IsValid,
+            "Expected configuration to be invalid due to missing Default key repeat settings.");
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("Default key repeat settings must be provided."));
     }
+
 
     [Fact]
     public void MissingFastModeKeyRepeatState_ShouldFailValidation()
@@ -181,7 +194,9 @@ public class AppSettingsTests
 
         var result = _validator.Validate(invalidSettings);
 
-        Assert.False(result.IsValid, "Expected configuration to be invalid due to missing FastMode KeyRepeat state.");
-        Assert.Contains(result.Errors, e => e.PropertyName.Contains("FastMode") && e.ErrorMessage.Contains("required"));
+        Assert.False(result.IsValid, "Expected configuration to be invalid due to missing FastMode.");
+        Assert.Contains(result.Errors, e =>
+            e.PropertyName == "KeyRepeat.FastMode" &&
+            e.ErrorMessage == "FastMode key repeat settings must be provided.");
     }
 }

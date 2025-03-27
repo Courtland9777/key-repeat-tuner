@@ -22,5 +22,10 @@ public sealed class WatcherCaptureFactory : IEventWatcherFactory
         public void Dispose()
         {
         }
+
+        public void SimulateEvent(EventRecordWrittenEventArgs args)
+        {
+            EventRecordWritten?.Invoke(this, args);
+        }
     }
 }
