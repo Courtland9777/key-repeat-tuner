@@ -8,7 +8,7 @@ using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Services;
 
-internal sealed class ProcessMonitorService : BackgroundService
+internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitorService
 {
     private readonly IKeyboardSettingsApplier _keyboardSettingsApplier;
     private readonly ILogger<ProcessMonitorService> _logger;
