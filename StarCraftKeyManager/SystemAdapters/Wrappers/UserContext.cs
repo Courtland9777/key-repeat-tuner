@@ -1,7 +1,7 @@
 ﻿using System.Security.Principal;
-using StarCraftKeyManager.Adapters;
+using StarCraftKeyManager.SystemAdapters.Interfaces;
 
-namespace StarCraftKeyManager.Wrappers;
+namespace StarCraftKeyManager.SystemAdapters.Wrappers;
 
 internal sealed class UserContext : IUserContext
 {

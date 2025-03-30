@@ -1,10 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Models;
+using StarCraftKeyManager.SystemAdapters.Interfaces;
 
 namespace StarCraftKeyManager.Services;
 

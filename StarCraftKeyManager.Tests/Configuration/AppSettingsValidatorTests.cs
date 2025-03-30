@@ -1,5 +1,4 @@
 ﻿using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 

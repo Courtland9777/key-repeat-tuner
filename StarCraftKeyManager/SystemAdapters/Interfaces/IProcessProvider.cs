@@ -1,4 +1,4 @@
-﻿namespace StarCraftKeyManager.Adapters;
+﻿namespace StarCraftKeyManager.SystemAdapters.Interfaces;
 
 public interface IProcessProvider
 {

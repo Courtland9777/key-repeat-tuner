@@ -2,11 +2,11 @@
 using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 using Serilog;
-using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
-using StarCraftKeyManager.Wrappers;
+using StarCraftKeyManager.SystemAdapters.Interfaces;
+using StarCraftKeyManager.SystemAdapters.Wrappers;
 
 namespace StarCraftKeyManager.Extensions;
 
@@ -50,8 +50,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ProcessMonitorService>();
         services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
-        services.AddSingleton<IEventWatcherFactory, EventWatcherFactory>();
-        services.AddSingleton<IEventLogQueryBuilder, SecurityAuditQueryBuilder>();
+        services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
         services.AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>();
         services.AddSingleton<IProcessProvider, ProcessProvider>();
         services.AddSingleton<IUserContext, UserContext>();

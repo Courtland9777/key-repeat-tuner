@@ -1,5 +1,4 @@
 ﻿using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Tests.Configuration;
 

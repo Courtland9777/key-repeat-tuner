@@ -1,6 +1,4 @@
-﻿using StarCraftKeyManager.Models;
-
-namespace StarCraftKeyManager.Configuration;
+﻿namespace StarCraftKeyManager.Configuration;
 
 public class AppSettings
 {

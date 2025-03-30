@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using StarCraftKeyManager.Models;
 
 namespace StarCraftKeyManager.Configuration;
 
