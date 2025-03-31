@@ -1,16 +1,14 @@
 ﻿using System.Management;
-using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
+using StarCraftKeyManager.SystemAdapters.Wrappers;
 
 namespace StarCraftKeyManager.Services;
 
-public class ProcessEventWatcher : IProcessEventWatcher
+public sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly ILogger<ProcessEventWatcher> _logger;
-    private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
     private readonly IManagementEventWatcherFactory _watcherFactory;
     private string _processName = string.Empty;
     private IManagementEventWatcher? _startWatcher;
@@ -18,11 +16,9 @@ public class ProcessEventWatcher : IProcessEventWatcher
 
     public ProcessEventWatcher(
         ILogger<ProcessEventWatcher> logger,
-        IOptionsMonitor<AppSettings> optionsMonitor,
         IManagementEventWatcherFactory watcherFactory)
     {
         _logger = logger;
-        _optionsMonitor = optionsMonitor;
         _watcherFactory = watcherFactory;
     }
 
@@ -42,7 +38,7 @@ public class ProcessEventWatcher : IProcessEventWatcher
         Start();
     }
 
-    public virtual void Stop()
+    public void Stop()
     {
         _startWatcher?.Stop();
         _startWatcher?.Dispose();
@@ -65,8 +61,8 @@ public class ProcessEventWatcher : IProcessEventWatcher
         _startWatcher = _watcherFactory.Create(startQuery);
         _stopWatcher = _watcherFactory.Create(stopQuery);
 
-        _startWatcher.EventArrived += (s, e) => OnStartEventArrived(e);
-        _stopWatcher.EventArrived += (s, e) => OnStopEventArrived(e);
+        _startWatcher.EventArrived += (_, e) => OnStartEventArrived(e);
+        _stopWatcher.EventArrived += (_, e) => OnStopEventArrived(e);
 
         _startWatcher.Start();
         _stopWatcher.Start();
@@ -77,34 +73,34 @@ public class ProcessEventWatcher : IProcessEventWatcher
     public void Dispose()
     {
         Stop();
-        GC.SuppressFinalize(this);
     }
 
-    protected virtual void OnStartEventArrived(EventArrivedEventArgs e)
+    private void OnStartEventArrived(EventArrivedEventArgs e)
     {
-        HandleStartEvent(e);
+        HandleStartEvent(new EventArrivedEventArgsAdapter(e));
     }
 
-    protected virtual void OnStopEventArrived(EventArrivedEventArgs e)
+    private void OnStopEventArrived(EventArrivedEventArgs e)
     {
-        HandleStopEvent(e);
+        HandleStopEvent(new EventArrivedEventArgsAdapter(e));
     }
 
-    private void HandleStartEvent(EventArrivedEventArgs e)
+    private void HandleStartEvent(IEventArrivedEventArgs args)
     {
-        var pid = ExtractProcessId(e);
+        var pid = args.GetProcessId();
         _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
         ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(4688, pid, $"{_processName}.exe"));
     }
 
-    private void HandleStopEvent(EventArrivedEventArgs e)
+    private void HandleStopEvent(IEventArrivedEventArgs args)
     {
-        var pid = ExtractProcessId(e);
+        var pid = args.GetProcessId();
         _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
         ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(4689, pid, $"{_processName}.exe"));
     }
 
-    protected virtual int ExtractProcessId(EventArrivedEventArgs e)
+
+    private static int ExtractProcessId(EventArrivedEventArgs e)
     {
         return Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
     }
