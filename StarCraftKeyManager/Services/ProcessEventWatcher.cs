@@ -98,10 +98,4 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
         ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(4689, pid, $"{_processName}.exe"));
     }
-
-
-    private static int ExtractProcessId(EventArrivedEventArgs e)
-    {
-        return Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
-    }
 }
