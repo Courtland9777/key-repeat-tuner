@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
 using StarCraftKeyManager.Tests.TestUtilities.Extensions;
@@ -102,7 +103,7 @@ public class ProcessEventWatcherTest
         _processEventWatcher.ProcessEventOccurred += (_, args) =>
         {
             triggered = true;
-            Assert.Equal(4688, args.EventId);
+            Assert.Equal(ProcessEventId.Start, args.EventId);
             Assert.Equal(1234, args.ProcessId);
             Assert.Equal("test.exe", args.ProcessName);
         };
@@ -124,7 +125,7 @@ public class ProcessEventWatcherTest
         _processEventWatcher.ProcessEventOccurred += (_, args) =>
         {
             triggered = true;
-            Assert.Equal(4689, args.EventId);
+            Assert.Equal(ProcessEventId.Stop, args.EventId);
             Assert.Equal(5678, args.ProcessId);
             Assert.Equal("test.exe", args.ProcessName);
         };

@@ -15,8 +15,6 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
     private readonly IProcessEventWatcher _processEventWatcher;
     private readonly IProcessProvider _processProvider;
     private readonly ConcurrentDictionary<int, byte> _trackedProcesses = new();
-
-    private bool _isRunning;
     private KeyRepeatSettings _keyRepeatSettings;
     private string _processName;
 
@@ -49,6 +47,8 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         });
     }
 
+    private bool IsRunning => !_trackedProcesses.IsEmpty;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
@@ -68,7 +68,6 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         foreach (var pid in initialProcessIds)
             _trackedProcesses.TryAdd(pid, 0);
 
-        _isRunning = !_trackedProcesses.IsEmpty;
         _logger.LogInformation("Initial tracked processes: {Count}", _trackedProcesses.Count);
         ApplyKeyRepeatSettings();
 
@@ -90,14 +89,14 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
 
     private void OnProcessEventOccurred(object? sender, ProcessEventArgs e)
     {
-        var wasRunning = _isRunning;
+        var wasRunning = IsRunning;
 
         switch (e.EventId)
         {
-            case 4688:
+            case ProcessEventId.Start:
                 _trackedProcesses.TryAdd(e.ProcessId, 0);
                 break;
-            case 4689:
+            case ProcessEventId.Stop:
                 _trackedProcesses.TryRemove(e.ProcessId, out _);
                 break;
             default:
@@ -106,25 +105,23 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
                 return;
         }
 
-        _isRunning = !_trackedProcesses.IsEmpty;
+        if (wasRunning == IsRunning) return;
 
-        _logger.LogInformation("Process event occurred: {EventId} for PID {ProcessId}", e.EventId, e.ProcessId);
-
-        if (wasRunning == _isRunning) return;
         _logger.LogInformation("Process running state changed to {IsRunning}. Updating key repeat settings...",
-            _isRunning);
+            IsRunning);
         ApplyKeyRepeatSettings();
     }
+
 
     internal void ApplyKeyRepeatSettings()
     {
         try
         {
-            var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
+            var settings = IsRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
 
             _logger.LogInformation(
                 "Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay} for {ProcessName}",
-                _isRunning ? "FastMode" : "Default",
+                IsRunning ? "FastMode" : "Default",
                 settings.RepeatSpeed,
                 settings.RepeatDelay,
                 ProcessNameSanitizer.WithExe(_processName));
@@ -134,7 +131,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to apply key repeat settings. Running={IsRunning}", _isRunning);
+            _logger.LogError(ex, "Failed to apply key repeat settings. Running={IsRunning}", IsRunning);
         }
     }
 }

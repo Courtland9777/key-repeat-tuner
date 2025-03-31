@@ -69,7 +69,7 @@ public class ProcessMonitorServiceTests
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
 
         _mockLogger.Verify(log => log.Log(
@@ -98,14 +98,14 @@ public class ProcessMonitorServiceTests
     {
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe") // Start
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe") // Start
         );
 
         _mockLogger.Invocations.Clear(); // Clean up logs before testing the transition
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4689, 1234, "starcraft.exe") // Exit
+            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe") // Exit
         );
 
 
@@ -124,7 +124,7 @@ public class ProcessMonitorServiceTests
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "notepad.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "notepad.exe")
         );
 
         _mockLogger.Verify(log => log.Log(
@@ -141,7 +141,7 @@ public class ProcessMonitorServiceTests
     {
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
 
         await _processMonitorService.StartAsync(CancellationToken.None);
@@ -161,11 +161,11 @@ public class ProcessMonitorServiceTests
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 5678, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 5678, "starcraft.exe")
         );
 
         _mockLogger.Verify(log => log.Log(
@@ -184,20 +184,20 @@ public class ProcessMonitorServiceTests
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 5678, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 5678, "starcraft.exe")
         );
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4689, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe")
         );
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4689, 5678, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Stop, 5678, "starcraft.exe")
         );
 
         _mockLogger.Verify(log => log.Log(
@@ -234,12 +234,12 @@ public class ProcessMonitorServiceTests
         {
             _mockProcessEventWatcher.Raise(
                 w => w.ProcessEventOccurred += null,
-                new ProcessEventArgs(4688, i, "starcraft.exe")
+                new ProcessEventArgs(ProcessEventId.Start, i, "starcraft.exe")
             );
 
             _mockProcessEventWatcher.Raise(
                 w => w.ProcessEventOccurred += null,
-                new ProcessEventArgs(4689, i, "starcraft.exe")
+                new ProcessEventArgs(ProcessEventId.Stop, i, "starcraft.exe")
             );
         }
 
@@ -314,11 +314,11 @@ public class ProcessMonitorServiceTests
         await _processMonitorService.StartAsync(CancellationToken.None);
 
         _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1111, "starcraft.exe"));
+            new ProcessEventArgs(ProcessEventId.Start, 1111, "starcraft.exe"));
         _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 2222, "starcraft.exe"));
+            new ProcessEventArgs(ProcessEventId.Start, 2222, "starcraft.exe"));
         _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4689, 1111, "starcraft.exe")); // one exits
+            new ProcessEventArgs(ProcessEventId.Stop, 1111, "starcraft.exe")); // one exits
 
         // FastMode should still be active since one process remains
         _mockKeyboardSettingsApplier.Verify(apply =>
@@ -349,7 +349,7 @@ public class ProcessMonitorServiceTests
         await service.StartAsync(CancellationToken.None);
 
         _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1000, "starcraft.exe"));
+            new ProcessEventArgs(ProcessEventId.Start, 1000, "starcraft.exe"));
 
         optionsMonitor.TriggerChange(new AppSettings
         {
@@ -388,12 +388,12 @@ public class ProcessMonitorServiceTests
     {
         // Arrange
         _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")); // add
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")); // add
         _mockLogger.Invocations.Clear();
 
         // Act: Send duplicate start
         _mockProcessEventWatcher.Raise(w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")); // no state change
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")); // no state change
 
         // Assert
         _mockLogger.Verify(l => l.Log(

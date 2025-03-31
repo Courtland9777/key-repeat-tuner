@@ -88,7 +88,7 @@ public class ProcessMonitorServiceIntegrationTests
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
 
         // Assert
@@ -133,11 +133,11 @@ public class ProcessMonitorServiceIntegrationTests
         // Act: simulate process start and stop
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4689, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe")
         );
 
         // Assert: default settings should be restored
@@ -207,7 +207,7 @@ public class ProcessMonitorServiceIntegrationTests
     {
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 5678, "notepad.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 5678, "notepad.exe")
         );
 
         await Task.Delay(100);
@@ -269,11 +269,11 @@ public class ProcessMonitorServiceIntegrationTests
         // Act
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 5678, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 5678, "starcraft.exe")
         );
 
         // Assert: The first tracked process triggers FastMode settings
@@ -293,11 +293,11 @@ public class ProcessMonitorServiceIntegrationTests
         // Arrange
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
         );
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4688, 5678, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Start, 5678, "starcraft.exe")
         );
 
         _mockLogger.Invocations.Clear(); // clear logs before simulating exits
@@ -305,7 +305,7 @@ public class ProcessMonitorServiceIntegrationTests
         // Act: stop first process
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4689, 1234, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe")
         );
 
         // Assert: No state change yet
@@ -320,7 +320,7 @@ public class ProcessMonitorServiceIntegrationTests
         // Act: stop second (last) process
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(4689, 5678, "starcraft.exe")
+            new ProcessEventArgs(ProcessEventId.Stop, 5678, "starcraft.exe")
         );
 
         // Assert: Final state transition to false

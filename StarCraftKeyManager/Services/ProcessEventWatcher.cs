@@ -108,13 +108,13 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
     {
         var pid = args.GetProcessId();
         _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
-        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(4688, pid, $"{_processName}.exe"));
+        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(ProcessEventId.Start, pid, $"{_processName}.exe"));
     }
 
     private void HandleStopEvent(IEventArrivedEventArgs args)
     {
         var pid = args.GetProcessId();
         _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
-        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(4689, pid, $"{_processName}.exe"));
+        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(ProcessEventId.Stop, pid, $"{_processName}.exe"));
     }
 }
