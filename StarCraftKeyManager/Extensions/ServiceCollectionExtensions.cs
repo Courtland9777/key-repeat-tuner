@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
         if (!validationResults.IsValid)
         {
             LogValidationErrors(validationResults);
-            Log.Warning("Using default key repeat settings due to invalid configuration.");
+            Log.Error("Using default key repeat settings due to invalid configuration.");
             throw new InvalidOperationException(
                 "Invalid AppSettings detected. Please correct the errors and restart the application.");
         }

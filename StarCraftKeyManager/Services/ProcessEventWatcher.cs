@@ -65,8 +65,10 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         {
             if (_startWatcher != null || _stopWatcher != null) return;
 
-            var startQuery = $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{_processName}.exe'";
-            var stopQuery = $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{_processName}.exe'";
+            var startQuery =
+                $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{ProcessNameSanitizer.WithExe(_processName)}'";
+            var stopQuery =
+                $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{ProcessNameSanitizer.WithExe(_processName)}.exe'";
 
             _startWatcher = _watcherFactory.Create(startQuery);
             _stopWatcher = _watcherFactory.Create(stopQuery);

@@ -37,7 +37,8 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
                         return false;
                     }
                 })
-                .WithMessage("ProcessName must be a valid executable format (e.g., notepad or notepad.exe).");
+                .WithMessage(
+                    "ProcessName must be a valid process name (e.g., notepad, starcraft). Do not include '.exe'.");
         }
     }
 

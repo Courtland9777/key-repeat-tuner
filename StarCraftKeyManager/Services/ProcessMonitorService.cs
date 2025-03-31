@@ -4,6 +4,7 @@ using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
+using StarCraftKeyManager.Utilities;
 
 namespace StarCraftKeyManager.Services;
 
@@ -32,7 +33,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         _processProvider = processProvider;
 
         var settings = optionsMonitor.CurrentValue;
-        _processName = settings.ProcessMonitor.ProcessName;
+        _processName = ProcessNameSanitizer.Normalize(settings.ProcessMonitor.ProcessName);
         _keyRepeatSettings = settings.KeyRepeat;
 
         _processEventWatcher.Configure(_processName);
@@ -41,7 +42,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         optionsMonitor.OnChange(updatedSettings =>
         {
             _logger.LogInformation("Configuration updated: {@Settings}", updatedSettings);
-            _processName = updatedSettings.ProcessMonitor.ProcessName;
+            _processName = ProcessNameSanitizer.Normalize(updatedSettings.ProcessMonitor.ProcessName);
             _keyRepeatSettings = updatedSettings.KeyRepeat;
             _processEventWatcher.Configure(_processName);
             ApplyKeyRepeatSettings();
@@ -54,7 +55,8 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         {
             _logger.LogInformation("Starting process monitor service.");
             _processEventWatcher.Start();
-            _logger.LogInformation("Monitoring process: {ProcessName}", _processName);
+            _logger.LogInformation("Applying key repeat settings for {ProcessName}",
+                ProcessNameSanitizer.WithExe(_processName));
         }
         catch (Exception ex)
         {
@@ -120,10 +122,13 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         {
             var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
 
-            _logger.LogInformation("Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}",
+            _logger.LogInformation(
+                "Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay} for {ProcessName}",
                 _isRunning ? "FastMode" : "Default",
                 settings.RepeatSpeed,
-                settings.RepeatDelay);
+                settings.RepeatDelay,
+                ProcessNameSanitizer.WithExe(_processName));
+
 
             _keyboardSettingsApplier.ApplyRepeatSettings(settings.RepeatSpeed, settings.RepeatDelay);
         }
