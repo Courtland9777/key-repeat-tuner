@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using StarCraftKeyManager.Utilities;
 
 namespace StarCraftKeyManager.Configuration;
 
@@ -23,7 +24,19 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
         {
             RuleFor(x => x.ProcessName)
                 .NotEmpty()
-                .WithMessage("ProcessName must be specified.");
+                .Must(name =>
+                {
+                    try
+                    {
+                        _ = ProcessNameSanitizer.Normalize(name);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                })
+                .WithMessage("ProcessName must be a valid executable format (e.g., notepad or notepad.exe).");
         }
     }
 
