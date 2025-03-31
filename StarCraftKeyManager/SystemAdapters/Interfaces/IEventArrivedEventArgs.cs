@@ -1,6 +1,6 @@
 ﻿namespace StarCraftKeyManager.SystemAdapters.Interfaces;
 
-public interface IUserContext
+public interface IEventArrivedEventArgs
 {
-    bool IsAdministrator();
+    int GetProcessId();
 }

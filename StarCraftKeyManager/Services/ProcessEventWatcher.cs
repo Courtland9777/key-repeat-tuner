@@ -1,72 +1,73 @@
-﻿using System.Diagnostics.Eventing.Reader;
-using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Adapters;
-using StarCraftKeyManager.Configuration;
+﻿using System.Management;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
+using StarCraftKeyManager.SystemAdapters.Interfaces;
+using StarCraftKeyManager.SystemAdapters.Wrappers;
 
 namespace StarCraftKeyManager.Services;
 
-internal sealed class ProcessEventWatcher : IProcessEventWatcher
+public sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly ILogger<ProcessEventWatcher> _logger;
-    private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
-    private readonly IEventLogQueryBuilder _queryBuilder;
-    private readonly IEventWatcherFactory _watcherFactory;
-    private EventHandler<EventRecordWrittenEventArgs>? _eventHandler;
-
-    private IWrappedEventLogWatcher? _eventWatcher;
-    private bool _isRunning;
+    private readonly IManagementEventWatcherFactory _watcherFactory;
+    private string _processName = string.Empty;
+    private IManagementEventWatcher? _startWatcher;
+    private IManagementEventWatcher? _stopWatcher;
 
     public ProcessEventWatcher(
         ILogger<ProcessEventWatcher> logger,
-        IOptionsMonitor<AppSettings> optionsMonitor,
-        IEventWatcherFactory watcherFactory,
-        IEventLogQueryBuilder queryBuilder)
+        IManagementEventWatcherFactory watcherFactory)
     {
         _logger = logger;
-        _optionsMonitor = optionsMonitor;
         _watcherFactory = watcherFactory;
-        _queryBuilder = queryBuilder;
     }
 
     public event EventHandler<ProcessEventArgs>? ProcessEventOccurred;
 
     public void Configure(string processName)
     {
-        var query = _queryBuilder.BuildQuery();
+        var sanitized = processName.Replace(".exe", string.Empty, StringComparison.OrdinalIgnoreCase);
 
-        _eventWatcher = _watcherFactory.Create(query);
-        _eventHandler = EventWatcherOnEventRecordWritten;
-
-        _logger.LogInformation("Configured process watcher for {ProcessName}", processName);
-    }
-
-    public void Start()
-    {
-        if (_isRunning || _eventWatcher == null)
+        if (string.Equals(_processName, sanitized, StringComparison.OrdinalIgnoreCase))
             return;
 
-        _eventWatcher.EventRecordWritten += _eventHandler!;
-        _eventWatcher.Enabled = true;
-        _isRunning = true;
+        _logger.LogInformation("Reconfiguring WMI process watcher for {OldName} → {NewName}", _processName, sanitized);
 
-        _logger.LogInformation("Process event watcher started.");
+        Stop();
+        _processName = sanitized;
+        Start();
     }
 
     public void Stop()
     {
-        if (!_isRunning || _eventWatcher == null)
-            return;
+        _startWatcher?.Stop();
+        _startWatcher?.Dispose();
+        _startWatcher = null;
 
-        _eventWatcher.Enabled = false;
-        _eventWatcher.EventRecordWritten -= _eventHandler!;
-        _eventWatcher.Dispose();
+        _stopWatcher?.Stop();
+        _stopWatcher?.Dispose();
+        _stopWatcher = null;
 
-        _eventWatcher = null;
-        _isRunning = false;
+        _logger.LogInformation("WMI process watchers stopped.");
+    }
 
-        _logger.LogInformation("Process event watcher stopped.");
+    public void Start()
+    {
+        if (_startWatcher != null || _stopWatcher != null) return;
+
+        var startQuery = $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{_processName}.exe'";
+        var stopQuery = $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{_processName}.exe'";
+
+        _startWatcher = _watcherFactory.Create(startQuery);
+        _stopWatcher = _watcherFactory.Create(stopQuery);
+
+        _startWatcher.EventArrived += (_, e) => OnStartEventArrived(e);
+        _stopWatcher.EventArrived += (_, e) => OnStopEventArrived(e);
+
+        _startWatcher.Start();
+        _stopWatcher.Start();
+
+        _logger.LogInformation("WMI process watchers started.");
     }
 
     public void Dispose()
@@ -74,97 +75,27 @@ internal sealed class ProcessEventWatcher : IProcessEventWatcher
         Stop();
     }
 
-    internal void EventWatcherOnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
+    private void OnStartEventArrived(EventArrivedEventArgs e)
     {
-        if (e.EventRecord == null)
-        {
-            _logger.LogWarning("Null EventRecord received from event log.");
-            return;
-        }
-
-        try
-        {
-            var eventId = e.EventRecord.Id;
-            var processId = ExtractProcessId(e.EventRecord);
-
-            if (processId == null)
-            {
-                _logger.LogWarning("Missing required properties from event record.");
-                return;
-            }
-
-            _logger.LogInformation("Detected process event: EventId={EventId}, ProcessId={ProcessId}", eventId,
-                processId);
-
-            ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(
-                eventId,
-                processId.Value,
-                _optionsMonitor.CurrentValue.ProcessMonitor.ProcessName
-            ));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing event record.");
-        }
+        HandleStartEvent(new EventArrivedEventArgsAdapter(e));
     }
 
-    private int? ExtractProcessId(EventRecord record)
+    private void OnStopEventArrived(EventArrivedEventArgs e)
     {
-        try
-        {
-            return (int?)record.Properties[1].Value;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error extracting process ID from event record.");
-            return null;
-        }
+        HandleStopEvent(new EventArrivedEventArgsAdapter(e));
     }
 
-    public void HandleEvent(IWrappedEventRecordWrittenEventArgs e)
+    private void HandleStartEvent(IEventArrivedEventArgs args)
     {
-        if (e.EventRecord == null)
-        {
-            _logger.LogWarning("Null EventRecord received from event log.");
-            return;
-        }
-
-        try
-        {
-            var eventId = e.EventRecord.Id;
-            var processId = ExtractProcessId(e.EventRecord);
-
-            if (processId == null)
-            {
-                _logger.LogWarning("Missing required properties from wrapped event record.");
-                return;
-            }
-
-            _logger.LogInformation("Detected process event: EventId={EventId}, ProcessId={ProcessId}", eventId,
-                processId);
-
-            ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(
-                eventId,
-                processId.Value,
-                _optionsMonitor.CurrentValue.ProcessMonitor.ProcessName
-            ));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing wrapped event record.");
-        }
+        var pid = args.GetProcessId();
+        _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
+        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(4688, pid, $"{_processName}.exe"));
     }
 
-    private int? ExtractProcessId(IWrappedEventRecord record)
+    private void HandleStopEvent(IEventArrivedEventArgs args)
     {
-        try
-        {
-            return record.Properties.Count > 1 ? Convert.ToInt32(record.Properties[1]) : null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error extracting process ID from wrapped event record.");
-            return null;
-        }
+        var pid = args.GetProcessId();
+        _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
+        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(4689, pid, $"{_processName}.exe"));
     }
 }

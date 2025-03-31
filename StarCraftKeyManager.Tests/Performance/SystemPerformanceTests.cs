@@ -2,12 +2,11 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using StarCraftKeyManager.Adapters;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Models;
 using StarCraftKeyManager.Services;
+using StarCraftKeyManager.SystemAdapters.Interfaces;
 using StarCraftKeyManager.Tests.TestUtilities.Logging;
 using Xunit;
 

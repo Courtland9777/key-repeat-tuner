@@ -1,4 +1,4 @@
-﻿namespace StarCraftKeyManager.Models;
+﻿namespace StarCraftKeyManager.Configuration;
 
 public class ProcessMonitorSettings
 {
