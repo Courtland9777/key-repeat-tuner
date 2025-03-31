@@ -5,12 +5,12 @@ namespace StarCraftKeyManager.Configuration;
 
 public class AppSettingsValidator : AbstractValidator<AppSettings>
 {
-    public AppSettingsValidator()
+    public AppSettingsValidator(ILogger<AppSettingsValidator>? logger = null)
     {
         RuleFor(x => x.ProcessMonitor)
             .NotNull()
             .WithMessage("ProcessMonitor must be provided.")
-            .SetValidator(new ProcessMonitorSettingsValidator());
+            .SetValidator(new ProcessMonitorSettingsValidator(logger));
 
         RuleFor(x => x.KeyRepeat)
             .NotNull()
@@ -20,10 +20,10 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
 
     private class ProcessMonitorSettingsValidator : AbstractValidator<ProcessMonitorSettings>
     {
-        public ProcessMonitorSettingsValidator()
+        public ProcessMonitorSettingsValidator(ILogger<AppSettingsValidator>? logger = null)
         {
             RuleFor(x => x.ProcessName)
-                .NotEmpty()
+                .NotEmpty().WithMessage("ProcessName must be specified.")
                 .Must(name =>
                 {
                     try
@@ -31,8 +31,9 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
                         _ = ProcessNameSanitizer.Normalize(name);
                         return true;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        logger?.LogError(ex, "Validation failed for ProcessName: {Input}", name);
                         return false;
                     }
                 })
@@ -45,8 +46,7 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
         public KeyRepeatSettingsValidator()
         {
             RuleFor(x => x.Default)
-                .NotNull()
-                .WithMessage("Default key repeat settings must be provided.")
+                .NotNull().WithMessage("Default key repeat settings must be provided.")
                 .DependentRules(() =>
                 {
                     RuleFor(x => x.Default!.RepeatSpeed)
@@ -59,8 +59,7 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
                 });
 
             RuleFor(x => x.FastMode)
-                .NotNull()
-                .WithMessage("FastMode key repeat settings must be provided.")
+                .NotNull().WithMessage("FastMode key repeat settings must be provided.")
                 .DependentRules(() =>
                 {
                     RuleFor(x => x.FastMode!.RepeatSpeed)

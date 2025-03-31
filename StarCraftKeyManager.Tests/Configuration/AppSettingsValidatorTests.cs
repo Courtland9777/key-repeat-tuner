@@ -1,4 +1,7 @@
-﻿using StarCraftKeyManager.Configuration;
+﻿using Microsoft.Extensions.Logging;
+using Moq;
+using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Tests.TestUtilities.Extensions;
 using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 
@@ -6,7 +9,14 @@ namespace StarCraftKeyManager.Tests.Configuration;
 
 public class AppSettingsValidatorTests
 {
-    private readonly AppSettingsValidator _validator = new();
+    private readonly Mock<ILogger<AppSettingsValidator>> _mockLogger;
+    private readonly AppSettingsValidator _validator;
+
+    public AppSettingsValidatorTests()
+    {
+        _mockLogger = new Mock<ILogger<AppSettingsValidator>>();
+        _validator = new AppSettingsValidator(_mockLogger.Object);
+    }
 
     [Fact]
     public void ValidConfiguration_ShouldPassValidation()
@@ -27,11 +37,14 @@ public class AppSettingsValidatorTests
     }
 
     [Fact]
-    public void EmptyProcessMonitorName_ShouldFailValidation()
+    public void InvalidProcessNameFormat_ShouldLogAndFailValidation()
     {
-        var invalidSettings = new AppSettings
+        var mockLogger = new Mock<ILogger<AppSettingsValidator>>();
+        var validator = new AppSettingsValidator(mockLogger.Object);
+
+        var settings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "" }, // Invalid
+            ProcessMonitor = new ProcessMonitorSettings { ProcessName = string.Empty },
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -39,12 +52,19 @@ public class AppSettingsValidatorTests
             }
         };
 
-        var result = _validator.Validate(invalidSettings);
+        var result = validator.Validate(settings);
 
-        Assert.False(result.IsValid, "Expected configuration to be invalid due to empty ProcessMonitor.ProcessName.");
+        Assert.False(result.IsValid);
         Assert.Contains(result.Errors,
             e => e.PropertyName == "ProcessMonitor.ProcessName" &&
-                 e.ErrorMessage == "ProcessName must be specified.");
+                 e.ErrorMessage.Contains("valid executable format", StringComparison.OrdinalIgnoreCase));
+
+        mockLogger.Verify(logger => logger.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Validation failed for ProcessName"),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.AtLeastOnce);
     }
 
 
