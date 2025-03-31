@@ -41,37 +41,51 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 
     public void Stop()
     {
-        _startWatcher?.Stop();
-        _startWatcher?.Dispose();
-        _startWatcher = null;
+        try
+        {
+            _startWatcher?.Stop();
+            _startWatcher?.Dispose();
+            _startWatcher = null;
 
-        _stopWatcher?.Stop();
-        _stopWatcher?.Dispose();
-        _stopWatcher = null;
+            _stopWatcher?.Stop();
+            _stopWatcher?.Dispose();
+            _stopWatcher = null;
 
-        _logger.LogInformation("WMI process watchers stopped.");
+            _logger.LogInformation("WMI process watchers stopped.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to stop/reconfigure watchers.");
+        }
     }
 
     public void Start()
     {
-        if (_startWatcher != null || _stopWatcher != null) return;
+        try
+        {
+            if (_startWatcher != null || _stopWatcher != null) return;
 
-        var exeName = $"{_processName}.exe";
-        var startQuery = $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{exeName}'";
-        var stopQuery = $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{exeName}'";
+            var startQuery = $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{_processName}.exe'";
+            var stopQuery = $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{_processName}.exe'";
 
+            _startWatcher = _watcherFactory.Create(startQuery);
+            _stopWatcher = _watcherFactory.Create(stopQuery);
 
-        _startWatcher = _watcherFactory.Create(startQuery);
-        _stopWatcher = _watcherFactory.Create(stopQuery);
+            _startWatcher.EventArrived += (_, e) => OnStartEventArrived(e);
+            _stopWatcher.EventArrived += (_, e) => OnStopEventArrived(e);
 
-        _startWatcher.EventArrived += (_, e) => OnStartEventArrived(e);
-        _stopWatcher.EventArrived += (_, e) => OnStopEventArrived(e);
+            _startWatcher.Start();
+            _stopWatcher.Start();
 
-        _startWatcher.Start();
-        _stopWatcher.Start();
-
-        _logger.LogInformation("WMI process watchers started.");
+            _logger.LogInformation("WMI process watchers started.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start WMI process watchers for process: {ProcessName}", _processName);
+            throw;
+        }
     }
+
 
     public void Dispose()
     {

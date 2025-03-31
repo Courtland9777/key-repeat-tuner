@@ -20,7 +20,14 @@ public class ManagementEventWatcherAdapter : IManagementEventWatcher
 
     public void Start()
     {
-        _innerWatcher.Start();
+        try
+        {
+            _innerWatcher.Start();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to start underlying WMI watcher.", ex);
+        }
     }
 
     public void Stop()

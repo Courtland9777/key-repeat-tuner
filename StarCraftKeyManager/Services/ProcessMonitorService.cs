@@ -116,12 +116,20 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
 
     internal void ApplyKeyRepeatSettings()
     {
-        var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
-        _logger.LogInformation("Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}",
-            _isRunning ? "FastMode" : "Default",
-            settings.RepeatSpeed,
-            settings.RepeatDelay);
+        try
+        {
+            var settings = _isRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
 
-        _keyboardSettingsApplier.ApplyRepeatSettings(settings.RepeatSpeed, settings.RepeatDelay);
+            _logger.LogInformation("Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}",
+                _isRunning ? "FastMode" : "Default",
+                settings.RepeatSpeed,
+                settings.RepeatDelay);
+
+            _keyboardSettingsApplier.ApplyRepeatSettings(settings.RepeatSpeed, settings.RepeatDelay);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply key repeat settings. Running={IsRunning}", _isRunning);
+        }
     }
 }
