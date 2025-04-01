@@ -13,14 +13,14 @@ namespace StarCraftKeyManager.Tests.Performance;
 public class SystemPerformanceTests
 {
     private readonly Mock<IKeyRepeatSettingsService> _mockKeyRepeatSettingsService;
-    private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
+    private readonly Mock<ILogger<ProcessStateTracker>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
     private readonly Mock<IProcessProvider> _mockProcessProvider;
-    private readonly ProcessMonitorService _processMonitorService;
+    private readonly ProcessStateTracker _processStateTracker;
 
     public SystemPerformanceTests()
     {
-        _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
+        _mockLogger = new Mock<ILogger<ProcessStateTracker>>();
         _mockProcessEventWatcher = new Mock<IProcessEventWatcher>();
         _mockProcessProvider = new Mock<IProcessProvider>();
         _mockKeyRepeatSettingsService = new Mock<IKeyRepeatSettingsService>();
@@ -40,7 +40,7 @@ public class SystemPerformanceTests
 
         _mockProcessProvider.Setup(p => p.GetProcessIdsByName("starcraft")).Returns([]);
 
-        _processMonitorService = new ProcessMonitorService(
+        _processStateTracker = new ProcessStateTracker(
             _mockLogger.Object,
             _mockKeyRepeatSettingsService.Object
         );
@@ -50,12 +50,12 @@ public class SystemPerformanceTests
     public async Task ProcessMonitorService_ShouldHandleRapidEvents_Efficiently()
     {
         for (var i = 0; i < 100; i++)
-            await _processMonitorService.Handle(
+            await _processStateTracker.Handle(
                 new ProcessStarted(1000 + i, "starcraft.exe"),
                 CancellationToken.None);
 
         for (var i = 0; i < 100; i++)
-            await _processMonitorService.Handle(
+            await _processStateTracker.Handle(
                 new ProcessStopped(1000 + i, "starcraft.exe"),
                 CancellationToken.None);
 

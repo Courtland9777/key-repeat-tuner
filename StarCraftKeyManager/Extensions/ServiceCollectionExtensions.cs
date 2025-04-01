@@ -40,7 +40,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IUserContext, UserContext>()
             .AddSingleton<IProcessEventWatcher, ProcessEventWatcher>()
             .AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>()
-            .AddSingleton<ProcessMonitorService>();
+            .AddSingleton<ProcessStateTracker>();
     }
 
     private static void AddMonitoringServices(this IServiceCollection services)
@@ -48,8 +48,6 @@ public static class ServiceCollectionExtensions
         services
             .AddSingleton<IHealthCheck, ProcessWatcherHealthCheck>()
             .AddHealthChecks()
-            .AddCheck<ProcessWatcherHealthCheck>("Process Watcher")
-            .Services
-            .AddHostedService<AppSettingsStartupValidator>();
+            .AddCheck<ProcessWatcherHealthCheck>("process_watcher", tags: ["ready", "live"]);
     }
 }

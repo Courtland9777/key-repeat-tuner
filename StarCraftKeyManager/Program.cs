@@ -1,6 +1,8 @@
 using System.Text.Json;
+using MediatR;
 using Serilog;
 using StarCraftKeyManager.Configuration.Converters;
+using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Extensions;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
 
@@ -27,6 +29,8 @@ try
 
     using var app = builder.Build();
 
+    var mediator = app.Services.GetRequiredService<IMediator>();
+    await mediator.Publish(new AppStartupInitiated());
     var userContext = app.Services.GetRequiredService<IUserContext>();
     var skipAdmin = Environment.GetEnvironmentVariable("SKIP_ADMIN_CHECK") == "true";
     if (!skipAdmin && IsNotRunningUnderTest() && !userContext.IsAdministrator())

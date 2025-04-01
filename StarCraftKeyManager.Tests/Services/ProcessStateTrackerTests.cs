@@ -7,17 +7,17 @@ using Xunit;
 
 namespace StarCraftKeyManager.Tests.Services;
 
-public class ProcessMonitorServiceTests
+public class ProcessStateTrackerTests
 {
     private readonly Mock<IKeyRepeatSettingsService> _mockKeyRepeatSettingsService;
-    private readonly ProcessMonitorService _processMonitorService;
+    private readonly ProcessStateTracker _processStateTracker;
 
-    public ProcessMonitorServiceTests()
+    public ProcessStateTrackerTests()
     {
-        var mockLogger = new Mock<ILogger<ProcessMonitorService>>();
+        var mockLogger = new Mock<ILogger<ProcessStateTracker>>();
         _mockKeyRepeatSettingsService = new Mock<IKeyRepeatSettingsService>();
 
-        _processMonitorService = new ProcessMonitorService(
+        _processStateTracker = new ProcessStateTracker(
             mockLogger.Object,
             _mockKeyRepeatSettingsService.Object);
     }
@@ -25,7 +25,7 @@ public class ProcessMonitorServiceTests
     [Fact]
     public async Task Handle_ShouldApplySettings_WhenProcessStarts()
     {
-        await _processMonitorService.Handle(
+        await _processStateTracker.Handle(
             new ProcessStarted(1234, "starcraft.exe"),
             CancellationToken.None);
 
@@ -36,13 +36,13 @@ public class ProcessMonitorServiceTests
     public async Task Handle_ShouldApplySettings_WhenLastProcessStops()
     {
         // Start -> triggers running state
-        await _processMonitorService.Handle(
+        await _processStateTracker.Handle(
             new ProcessStarted(1234, "starcraft.exe"),
             CancellationToken.None);
         _mockKeyRepeatSettingsService.Invocations.Clear();
 
         // Stop -> no more processes running
-        await _processMonitorService.Handle(
+        await _processStateTracker.Handle(
             new ProcessStopped(1234, "starcraft.exe"),
             CancellationToken.None);
 

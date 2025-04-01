@@ -4,15 +4,15 @@ using StarCraftKeyManager.Interfaces;
 
 namespace StarCraftKeyManager.Services;
 
-public sealed class ProcessMonitorService : INotificationHandler<ProcessStarted>, INotificationHandler<ProcessStopped>
+public sealed class ProcessStateTracker : INotificationHandler<ProcessStarted>, INotificationHandler<ProcessStopped>
 {
     private readonly HashSet<int> _activeProcesses = [];
     private readonly IKeyRepeatSettingsService _keyRepeatSettingsService;
-    private readonly ILogger<ProcessMonitorService> _logger;
+    private readonly ILogger<ProcessStateTracker> _logger;
     private bool _lastKnownRunningState;
 
-    public ProcessMonitorService(
-        ILogger<ProcessMonitorService> logger,
+    public ProcessStateTracker(
+        ILogger<ProcessStateTracker> logger,
         IKeyRepeatSettingsService keyRepeatSettingsService)
     {
         _logger = logger;

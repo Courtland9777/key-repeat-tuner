@@ -10,14 +10,14 @@ namespace StarCraftKeyManager.Tests.Integration;
 public class ProcessMonitorServiceIntegrationTests
 {
     private readonly Mock<IKeyRepeatSettingsService> _mockKeyRepeatSettingsService;
-    private readonly ProcessMonitorService _processMonitorService;
+    private readonly ProcessStateTracker _processStateTracker;
 
     public ProcessMonitorServiceIntegrationTests()
     {
-        var mockLogger = new Mock<ILogger<ProcessMonitorService>>();
+        var mockLogger = new Mock<ILogger<ProcessStateTracker>>();
         _mockKeyRepeatSettingsService = new Mock<IKeyRepeatSettingsService>();
 
-        _processMonitorService = new ProcessMonitorService(
+        _processStateTracker = new ProcessStateTracker(
             mockLogger.Object,
             _mockKeyRepeatSettingsService.Object
         );
@@ -28,7 +28,7 @@ public class ProcessMonitorServiceIntegrationTests
     {
         var evt = new ProcessStarted(1234, "starcraft.exe");
 
-        await _processMonitorService.Handle(evt, CancellationToken.None);
+        await _processStateTracker.Handle(evt, CancellationToken.None);
 
         _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(true), Times.Once);
     }
@@ -37,11 +37,11 @@ public class ProcessMonitorServiceIntegrationTests
     public async Task ProcessStopped_ShouldTriggerUpdateRunningState_False()
     {
         // Simulate a process started first
-        await _processMonitorService.Handle(new ProcessStarted(1234, "starcraft.exe"), CancellationToken.None);
+        await _processStateTracker.Handle(new ProcessStarted(1234, "starcraft.exe"), CancellationToken.None);
         _mockKeyRepeatSettingsService.Invocations.Clear(); // reset call tracking
 
         // Now stop it
-        await _processMonitorService.Handle(new ProcessStopped(1234, "starcraft.exe"), CancellationToken.None);
+        await _processStateTracker.Handle(new ProcessStopped(1234, "starcraft.exe"), CancellationToken.None);
 
         _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(false), Times.Once);
     }
@@ -53,14 +53,14 @@ public class ProcessMonitorServiceIntegrationTests
         var stops = new[] { 1111, 2222, 3333 };
 
         foreach (var pid in starts)
-            await _processMonitorService.Handle(new ProcessStarted(pid, $"test_{pid}.exe"), CancellationToken.None);
+            await _processStateTracker.Handle(new ProcessStarted(pid, $"test_{pid}.exe"), CancellationToken.None);
 
         _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(true), Times.Once);
 
         _mockKeyRepeatSettingsService.Invocations.Clear();
 
         foreach (var pid in stops)
-            await _processMonitorService.Handle(new ProcessStopped(pid, $"test_{pid}.exe"), CancellationToken.None);
+            await _processStateTracker.Handle(new ProcessStopped(pid, $"test_{pid}.exe"), CancellationToken.None);
 
         _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(false), Times.Once);
     }
@@ -70,8 +70,8 @@ public class ProcessMonitorServiceIntegrationTests
     {
         for (var i = 0; i < 5; i++)
         {
-            await _processMonitorService.Handle(new ProcessStarted(9999, "repeat.exe"), CancellationToken.None);
-            await _processMonitorService.Handle(new ProcessStopped(9999, "repeat.exe"), CancellationToken.None);
+            await _processStateTracker.Handle(new ProcessStarted(9999, "repeat.exe"), CancellationToken.None);
+            await _processStateTracker.Handle(new ProcessStopped(9999, "repeat.exe"), CancellationToken.None);
         }
 
         // Each start/stop changes state, so both are called 5 times
