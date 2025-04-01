@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Configuration.Validation;
+using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
@@ -22,6 +23,8 @@ public static class ServiceCollectionExtensions
     {
         builder.Services.AddValidatorsFromAssemblyContaining<AppSettingsValidator>();
         builder.Services.AddSingleton<AppSettingsChangeValidator>();
+        builder.Services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
 
         using var serviceProvider = builder.Services.BuildServiceProvider();
         var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<AppSettings>>();

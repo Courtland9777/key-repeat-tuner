@@ -1,78 +1,49 @@
-﻿using System.Reflection;
+﻿using System.Management;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Moq;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
-using StarCraftKeyManager.Tests.TestUtilities.Extensions;
+using StarCraftKeyManager.Tests.TestUtilities.Fakes;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Services;
 
-public class ProcessEventWatcherTest
+public class ProcessEventWatcherTests
 {
-    private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger;
-    private readonly Mock<IManagementEventWatcher> _mockStartWatcher;
-    private readonly Mock<IManagementEventWatcher> _mockStopWatcher;
-    private readonly ProcessEventWatcher _processEventWatcher;
+    private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger = new();
+    private readonly Mock<IMediator> _mockMediator = new();
+    private readonly Mock<IManagementEventWatcher> _mockStartWatcher = new();
+    private readonly Mock<IManagementEventWatcher> _mockStopWatcher = new();
+    private readonly Mock<IManagementEventWatcherFactory> _mockWatcherFactory = new();
+    private readonly ProcessEventWatcher _watcher;
 
-    public ProcessEventWatcherTest()
+    public ProcessEventWatcherTests()
     {
-        _mockLogger = new Mock<ILogger<ProcessEventWatcher>>();
-        var mockFactory = new Mock<IManagementEventWatcherFactory>();
-        _mockStartWatcher = new Mock<IManagementEventWatcher>();
-        _mockStopWatcher = new Mock<IManagementEventWatcher>();
-
-        mockFactory.SetupSequence(f => f.Create(It.IsAny<string>()))
-            .Returns(_mockStartWatcher.Object)
+        _mockWatcherFactory.Setup(f => f.Create(It.Is<string>(q => q.Contains("Start"))))
+            .Returns(_mockStartWatcher.Object);
+        _mockWatcherFactory.Setup(f => f.Create(It.Is<string>(q => q.Contains("Stop"))))
             .Returns(_mockStopWatcher.Object);
 
-        _processEventWatcher = new ProcessEventWatcher(
+        _watcher = new ProcessEventWatcher(
             _mockLogger.Object,
-            mockFactory.Object
-        );
+            _mockWatcherFactory.Object,
+            _mockMediator.Object,
+            TestAdapter);
+        return;
+
+        static IEventArrivedEventArgs TestAdapter(EventArrivedEventArgs _)
+        {
+            return new FakeEventArrivedEventArgs(9876);
+        }
     }
 
     [Fact]
-    public void Configure_ShouldSanitizeProcessName()
+    public void Configure_ChangesWatcher_WhenNewProcessNameGiven()
     {
-        _processEventWatcher.Configure("test.exe");
-
-        var name = GetPrivateField<string>(_processEventWatcher, "_processName");
-        Assert.Equal("test", name);
-    }
-
-    [Fact]
-    public void Configure_ShouldNotReconfigureIfSameProcessName()
-    {
-        _processEventWatcher.Configure("test.exe");
-        _processEventWatcher.Configure("test.exe");
-
-        _mockLogger.Verify(log => log.Log(
-            LogLevel.Information,
-            It.IsAny<EventId>(),
-            MoqLogExtensions.MatchLogState("Reconfiguring WMI process watcher"),
-            null,
-            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
-    }
-
-    [Fact]
-    public void Start_ShouldInitializeWatchersOnce()
-    {
-        _processEventWatcher.Configure("test.exe");
-        _processEventWatcher.Start();
-        _processEventWatcher.Start();
-
-        _mockStartWatcher.Verify(w => w.Start(), Times.Once);
-        _mockStopWatcher.Verify(w => w.Start(), Times.Once);
-    }
-
-    [Fact]
-    public void Stop_ShouldDisposeWatchers()
-    {
-        _processEventWatcher.Configure("test.exe");
-        _processEventWatcher.Start();
-        _processEventWatcher.Stop();
+        _watcher.Configure("starcraft");
+        _watcher.Configure("warcraft");
 
         _mockStartWatcher.Verify(w => w.Stop(), Times.Once);
         _mockStartWatcher.Verify(w => w.Dispose(), Times.Once);
@@ -81,69 +52,46 @@ public class ProcessEventWatcherTest
     }
 
     [Fact]
-    public void Dispose_ShouldCallStop()
+    public void Configure_DoesNothing_WhenProcessNameIsSame()
     {
-        _processEventWatcher.Configure("test.exe");
-        _processEventWatcher.Start();
-        _processEventWatcher.Dispose();
+        _watcher.Configure("notepad");
+        _watcher.Configure("notepad");
 
-        _mockStartWatcher.Verify(w => w.Stop(), Times.Once);
-        _mockStopWatcher.Verify(w => w.Stop(), Times.Once);
+        _mockStartWatcher.Verify(w => w.Start(), Times.Once);
+        _mockStopWatcher.Verify(w => w.Start(), Times.Once);
     }
 
     [Fact]
-    public void ProcessEventOccurred_ShouldTriggerOnStartEvent()
+    public void Dispose_CleansUpWatchers()
     {
-        var triggered = false;
-        var mockArgs = new Mock<IEventArrivedEventArgs>();
-        mockArgs.Setup(x => x.GetProcessId()).Returns(1234);
+        _watcher.Configure("test");
+        _watcher.Dispose();
 
-        _processEventWatcher.Configure("test.exe");
-
-        _processEventWatcher.ProcessEventOccurred += (_, args) =>
-        {
-            triggered = true;
-            Assert.Equal(ProcessEventId.Start, args.EventId);
-            Assert.Equal(1234, args.ProcessId);
-            Assert.Equal("test.exe", args.ProcessName);
-        };
-
-        InvokePrivateMethod(_processEventWatcher, "HandleStartEvent", mockArgs.Object);
-
-        Assert.True(triggered);
+        _mockStartWatcher.Verify(w => w.Stop(), Times.AtLeastOnce);
+        _mockStopWatcher.Verify(w => w.Dispose(), Times.AtLeastOnce);
     }
 
     [Fact]
-    public void ProcessEventOccurred_ShouldTriggerOnStopEvent()
+    public void OnStartEventArrived_ShouldPublishProcessStarted()
     {
-        var triggered = false;
-        var mockArgs = new Mock<IEventArrivedEventArgs>();
-        mockArgs.Setup(x => x.GetProcessId()).Returns(5678);
+        _watcher.Configure("dosbox");
+        _watcher.OnStartEventArrived(null!); // event args ignored in test
 
-        _processEventWatcher.Configure("test.exe");
-
-        _processEventWatcher.ProcessEventOccurred += (_, args) =>
-        {
-            triggered = true;
-            Assert.Equal(ProcessEventId.Stop, args.EventId);
-            Assert.Equal(5678, args.ProcessId);
-            Assert.Equal("test.exe", args.ProcessName);
-        };
-
-        InvokePrivateMethod(_processEventWatcher, "HandleStopEvent", mockArgs.Object);
-
-        Assert.True(triggered);
+        _mockMediator.Verify(m =>
+            m.Publish(It.Is<ProcessStarted>(x =>
+                x.ProcessId == 9876 &&
+                x.ProcessName == "dosbox.exe"), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private static T? GetPrivateField<T>(object obj, string fieldName)
+    [Fact]
+    public void OnStopEventArrived_ShouldPublishProcessStopped()
     {
-        var field = obj.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
-        return field != null ? (T?)field.GetValue(obj) : default;
-    }
+        _watcher.Configure("quake");
+        _watcher.OnStopEventArrived(null!); // event args ignored in test
 
-    private static void InvokePrivateMethod(object obj, string methodName, object param)
-    {
-        var method = obj.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
-        method?.Invoke(obj, [param]);
+        _mockMediator.Verify(m =>
+            m.Publish(It.Is<ProcessStopped>(x =>
+                x.ProcessId == 9876 &&
+                x.ProcessName == "quake.exe"), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

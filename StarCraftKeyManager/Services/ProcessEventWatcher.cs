@@ -1,4 +1,5 @@
 ﻿using System.Management;
+using MediatR;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
@@ -9,7 +10,9 @@ namespace StarCraftKeyManager.Services;
 
 public sealed class ProcessEventWatcher : IProcessEventWatcher
 {
+    private readonly Func<EventArrivedEventArgs, IEventArrivedEventArgs> _adapterFactory;
     private readonly ILogger<ProcessEventWatcher> _logger;
+    private readonly IMediator _mediator;
     private readonly IManagementEventWatcherFactory _watcherFactory;
     private string _processName = string.Empty;
     private IManagementEventWatcher? _startWatcher;
@@ -17,13 +20,15 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 
     public ProcessEventWatcher(
         ILogger<ProcessEventWatcher> logger,
-        IManagementEventWatcherFactory watcherFactory)
+        IManagementEventWatcherFactory watcherFactory,
+        IMediator mediator,
+        Func<EventArrivedEventArgs, IEventArrivedEventArgs>? adapterFactory = null)
     {
         _logger = logger;
         _watcherFactory = watcherFactory;
+        _mediator = mediator;
+        _adapterFactory = adapterFactory ?? (e => new EventArrivedEventArgsAdapter(e));
     }
-
-    public event EventHandler<ProcessEventArgs>? ProcessEventOccurred;
 
     public void Configure(string processName)
     {
@@ -37,26 +42,6 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         Stop();
         _processName = sanitized;
         Start();
-    }
-
-    public void Stop()
-    {
-        try
-        {
-            _startWatcher?.Stop();
-            _startWatcher?.Dispose();
-            _startWatcher = null;
-
-            _stopWatcher?.Stop();
-            _stopWatcher?.Dispose();
-            _stopWatcher = null;
-
-            _logger.LogInformation("WMI process watchers stopped.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to stop/reconfigure watchers.");
-        }
     }
 
     public void Start()
@@ -88,33 +73,46 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         }
     }
 
+    public void Stop()
+    {
+        try
+        {
+            _startWatcher?.Stop();
+            _startWatcher?.Dispose();
+            _startWatcher = null;
+
+            _stopWatcher?.Stop();
+            _stopWatcher?.Dispose();
+            _stopWatcher = null;
+
+            _logger.LogInformation("WMI process watchers stopped.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to stop/reconfigure watchers.");
+        }
+    }
 
     public void Dispose()
     {
         Stop();
     }
 
-    private void OnStartEventArrived(EventArrivedEventArgs e)
+    internal void OnStartEventArrived(EventArrivedEventArgs e)
     {
-        HandleStartEvent(new EventArrivedEventArgsAdapter(e));
-    }
-
-    private void OnStopEventArrived(EventArrivedEventArgs e)
-    {
-        HandleStopEvent(new EventArrivedEventArgsAdapter(e));
-    }
-
-    private void HandleStartEvent(IEventArrivedEventArgs args)
-    {
+        var args = _adapterFactory(e);
         var pid = args.GetProcessId();
         _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
-        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(ProcessEventId.Start, pid, $"{_processName}.exe"));
+
+        _ = _mediator.Publish(new ProcessStarted(pid, $"{_processName}.exe"));
     }
 
-    private void HandleStopEvent(IEventArrivedEventArgs args)
+    internal void OnStopEventArrived(EventArrivedEventArgs e)
     {
+        var args = _adapterFactory(e);
         var pid = args.GetProcessId();
         _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
-        ProcessEventOccurred?.Invoke(this, new ProcessEventArgs(ProcessEventId.Stop, pid, $"{_processName}.exe"));
+
+        _ = _mediator.Publish(new ProcessStopped(pid, $"{_processName}.exe"));
     }
 }

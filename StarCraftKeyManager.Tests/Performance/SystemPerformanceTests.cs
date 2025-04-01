@@ -41,9 +41,6 @@ public class SystemPerformanceTests
 
         _processMonitorService = new ProcessMonitorService(
             _mockLogger.Object,
-            mockOptionsMonitor.Object,
-            _mockProcessEventWatcher.Object,
-            _mockProcessProvider.Object,
             _mockKeyRepeatSettingsService.Object
         );
     }
