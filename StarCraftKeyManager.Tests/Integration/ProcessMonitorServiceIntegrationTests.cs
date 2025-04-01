@@ -16,7 +16,6 @@ public class ProcessMonitorServiceIntegrationTests
 {
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
-    private readonly string _processName;
     private ProcessMonitorService _processMonitorService;
 
     public ProcessMonitorServiceIntegrationTests()
@@ -52,8 +51,6 @@ public class ProcessMonitorServiceIntegrationTests
             mockKeyboardSettingsApplier.Object,
             mockProcessProvider.Object
         );
-
-        _processName = mockSettings.ProcessMonitor.ProcessName;
     }
 
     [Fact]
