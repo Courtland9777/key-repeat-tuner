@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Configuration.Converters;
+using StarCraftKeyManager.Configuration.Validation;
 using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;

@@ -116,6 +116,11 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         _ = _mediator.Publish(new ProcessStopped(pid, $"{_processName}.exe"));
     }
 
+    public bool IsHealthy()
+    {
+        return _startWatcher != null && _stopWatcher != null;
+    }
+
     private static class Log
     {
         public static readonly Action<ILogger, int, Exception?> StartEvent =

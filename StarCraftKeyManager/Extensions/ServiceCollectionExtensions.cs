@@ -1,7 +1,9 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Configuration.Validation;
 using StarCraftKeyManager.Events;
+using StarCraftKeyManager.Health;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
@@ -21,6 +23,10 @@ public static class ServiceCollectionExtensions
         builder.Services.AddValidatorsFromAssemblyContaining<AppSettingsValidator>();
         builder.Services.AddSingleton<AppSettingsChangeValidator>();
         builder.Services.AddSingleton<IAppSettingsChangeHandler, KeyRepeatSettingsService>();
+        builder.Services.AddHealthChecks()
+            .AddCheck<ProcessWatcherHealthCheck>("Process Watcher");
+        builder.Services.AddSingleton<IHealthCheck, ProcessWatcherHealthCheck>();
+
         builder.Services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
 
