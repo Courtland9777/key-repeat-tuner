@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
     {
         builder.Services.AddValidatorsFromAssemblyContaining<AppSettingsValidator>();
         builder.Services.AddSingleton<AppSettingsChangeValidator>();
+        builder.Services.AddSingleton<IAppSettingsChangeHandler, KeyRepeatSettingsService>();
         builder.Services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
 
