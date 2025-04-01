@@ -1,7 +1,13 @@
-﻿namespace StarCraftKeyManager.Configuration;
+﻿using System.Text.Json.Serialization;
+using StarCraftKeyManager.Configuration.Converters;
+using StarCraftKeyManager.Configuration.ValueObjects;
+
+namespace StarCraftKeyManager.Configuration;
 
 public class AppSettings
 {
-    public required string ProcessName { get; set; }
+    [JsonConverter(typeof(ProcessNameJsonConverter))]
+    public required ProcessName ProcessName { get; set; }
+
     public required KeyRepeatSettings KeyRepeat { get; set; }
 }

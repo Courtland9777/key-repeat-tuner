@@ -1,28 +1,13 @@
 ﻿using FluentValidation;
-using StarCraftKeyManager.Utilities;
 
 namespace StarCraftKeyManager.Configuration;
 
 public class AppSettingsValidator : AbstractValidator<AppSettings>
 {
-    public AppSettingsValidator(ILogger<AppSettingsValidator>? logger = null)
+    public AppSettingsValidator()
     {
         RuleFor(x => x.ProcessName)
-            .NotEmpty().WithMessage("ProcessName must be specified.")
-            .Must(name =>
-            {
-                try
-                {
-                    _ = ProcessNameSanitizer.Normalize(name);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    logger?.LogError(ex, "Validation failed for ProcessName: {Input}", name);
-                    return false;
-                }
-            })
-            .WithMessage("ProcessName must be a valid process name (e.g., notepad, starcraft). Do not include '.exe'.");
+            .NotNull().WithMessage("ProcessName must be specified.");
 
         RuleFor(x => x.KeyRepeat)
             .NotNull().WithMessage("KeyRepeat settings must be provided.")

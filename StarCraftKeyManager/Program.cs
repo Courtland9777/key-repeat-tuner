@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Serilog;
+using StarCraftKeyManager.Configuration.Converters;
 using StarCraftKeyManager.Extensions;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
 
@@ -15,6 +17,10 @@ try
 {
     var builder = Host.CreateApplicationBuilder(args);
     builder.ConfigureSerilog();
+    builder.Services.Configure<JsonSerializerOptions>(options =>
+    {
+        options.Converters.Add(new ProcessNameJsonConverter());
+    });
     builder.SetServiceName();
     builder.AddAppSettingsJson();
     builder.AddApplicationServices();

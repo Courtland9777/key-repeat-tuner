@@ -1,21 +1,26 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Moq;
 using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Tests.TestUtilities.Extensions;
+using StarCraftKeyManager.Configuration.Converters;
+using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace StarCraftKeyManager.Tests.Configuration;
 
 public class AppSettingsValidatorTests
 {
     private readonly Mock<ILogger<AppSettingsValidator>> _mockLogger;
+    private readonly ITestOutputHelper _testOutputHelper;
     private readonly AppSettingsValidator _validator;
 
-    public AppSettingsValidatorTests()
+    public AppSettingsValidatorTests(ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         _mockLogger = new Mock<ILogger<AppSettingsValidator>>();
-        _validator = new AppSettingsValidator(_mockLogger.Object);
+        _validator = new AppSettingsValidator();
     }
 
     [Fact]
@@ -37,14 +42,13 @@ public class AppSettingsValidatorTests
     }
 
     [Fact]
-    public void InvalidProcessNameFormat_ShouldLogAndFailValidation()
+    public void NullProcessName_ShouldFailValidation()
     {
-        var mockLogger = new Mock<ILogger<AppSettingsValidator>>();
-        var validator = new AppSettingsValidator(mockLogger.Object);
+        var validator = new AppSettingsValidator();
 
         var settings = new AppSettings
         {
-            ProcessName = string.Empty,
+            ProcessName = null!,
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -55,19 +59,38 @@ public class AppSettingsValidatorTests
         var result = validator.Validate(settings);
 
         Assert.False(result.IsValid);
-
         Assert.Contains(result.Errors,
             e => e.PropertyName == "ProcessName" &&
-                 e.ErrorMessage.Contains("valid process name", StringComparison.OrdinalIgnoreCase));
-
-        mockLogger.Verify(logger => logger.Log(
-            LogLevel.Error,
-            It.IsAny<EventId>(),
-            MoqLogExtensions.MatchLogState("Validation failed for ProcessName"),
-            It.IsAny<Exception>(),
-            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.AtLeastOnce);
+                 e.ErrorMessage.Contains("must be specified", StringComparison.OrdinalIgnoreCase));
     }
 
+
+    [Fact]
+    public void InvalidProcessName_ShouldThrowDuringDeserialization()
+    {
+        // Arrange
+        var json = """
+                   {
+                       "ProcessName": "invalid name.exe",
+                       "KeyRepeat": {
+                           "Default": { "RepeatSpeed": 20, "RepeatDelay": 500 },
+                           "FastMode": { "RepeatSpeed": 20, "RepeatDelay": 500 }
+                       }
+                   }
+                   """;
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        options.Converters.Add(new ProcessNameJsonConverter());
+
+        // Act + Assert
+        var ex = Assert.Throws<JsonException>(() =>
+            JsonSerializer.Deserialize<AppSettings>(json, options));
+
+        Assert.Contains("Invalid ProcessName format", ex.Message);
+    }
 
     [Fact]
     public void ChangingAppSettings_ShouldTriggerValidation()
@@ -75,7 +98,7 @@ public class AppSettingsValidatorTests
         // Arrange
         var initialSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessName = new ProcessName("starcraft"),
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -85,7 +108,7 @@ public class AppSettingsValidatorTests
 
         var updatedSettings = new AppSettings
         {
-            ProcessName = string.Empty,
+            ProcessName = new ProcessName("starcraft"),
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 50, RepeatDelay = 2000 },
@@ -105,8 +128,6 @@ public class AppSettingsValidatorTests
 
         // Assert
         Assert.False(updatedResult.IsValid);
-
-        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "ProcessName");
         Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.Default.RepeatSpeed");
         Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.Default.RepeatDelay");
         Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.FastMode.RepeatSpeed");
