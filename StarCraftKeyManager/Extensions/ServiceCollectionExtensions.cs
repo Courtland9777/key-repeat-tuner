@@ -65,7 +65,6 @@ public static class ServiceCollectionExtensions
     private static void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<ProcessMonitorService>();
-        services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
         services.AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>();
         services.AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>();

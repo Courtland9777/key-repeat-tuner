@@ -49,30 +49,61 @@ public class ProcessMonitorServiceIntegrationTests
     }
 
     [Fact]
-    public async Task StartAsync_ShouldBeginMonitoring_WhenInvoked()
+    public async Task ProcessStarted_ShouldTriggerStateChange_AndLog()
     {
-        var cts = new CancellationTokenSource();
+        var evt = new ProcessStarted(1234, "starcraft.exe");
 
-        var monitorTask = _processMonitorService.StartAsync(cts.Token);
-        await Task.Delay(500, cts.Token);
+        await _processMonitorService.Handle(evt, CancellationToken.None);
+
+        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(true), Times.Once);
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Debug,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Process started: PID=1234, Name=starcraft.exe"),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
 
         _mockLogger.Verify(log => log.Log(
             LogLevel.Information,
             It.IsAny<EventId>(),
-            MoqLogExtensions.MatchLogState("Starting process monitor service."),
+            MoqLogExtensions.MatchLogState("Process running state changed to: True"),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessStopped_ShouldTriggerStateChange_AndLog()
+    {
+        // Pre-fill state with a running process
+        await _processMonitorService.Handle(new ProcessStarted(1234, "sc2.exe"), CancellationToken.None);
+        _mockKeyRepeatSettingsService.Invocations.Clear();
+
+        // Then stop it
+        var evt = new ProcessStopped(1234, "sc2.exe");
+
+        await _processMonitorService.Handle(evt, CancellationToken.None);
+
+        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(false), Times.Once);
+
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Debug,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Process stopped: PID=1234, Name=sc2.exe"),
             null,
             It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
 
-        await cts.CancelAsync();
-        await monitorTask;
+        _mockLogger.Verify(log => log.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Process running state changed to: False"),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
 
     [Fact]
     public async Task ProcessEvents_ShouldTriggerSettingsChange_WhenStarCraftStartsAndStops()
     {
-        // Arrange
-        await _processMonitorService.StartAsync(CancellationToken.None);
-
         // Act: simulate process start
         await _processMonitorService.Handle(
             new ProcessStarted(1234, "starcraft.exe"),

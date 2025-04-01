@@ -8,35 +8,10 @@ namespace StarCraftKeyManager.Services;
 
 internal sealed class KeyRepeatSettingsService : IKeyRepeatSettingsService, IDisposable
 {
-    private static readonly Action<ILogger, string, int, int, Exception?> LogApplySettings =
-        LoggerMessage.Define<string, int, int>(
-            LogLevel.Information,
-            new EventId(1000, "ApplySettings"),
-            "Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}");
-
-    private static readonly Action<ILogger, string, Exception?> LogSuccess =
-        LoggerMessage.Define<string>(
-            LogLevel.Information,
-            new EventId(1001, "ConfigSuccess"),
-            "{Message}");
-
-    private static readonly Action<ILogger, string, string, Exception?> LogValidationError =
-        LoggerMessage.Define<string, string>(
-            LogLevel.Error,
-            new EventId(1002, "ValidationError"),
-            "{Property}: {Message}");
-
-    private static readonly Action<ILogger, Exception?> LogApplyFailed =
-        LoggerMessage.Define(
-            LogLevel.Error,
-            new EventId(1003, "ApplyFailed"),
-            "Failed to apply key repeat settings.");
-
     private readonly IDisposable? _changeRegistration;
     private readonly IKeyboardSettingsApplier _keyboardSettingsApplier;
     private readonly ILogger<KeyRepeatSettingsService> _logger;
     private KeyRepeatSettings _settings;
-
 
     public KeyRepeatSettingsService(
         ILogger<KeyRepeatSettingsService> logger,
@@ -56,12 +31,12 @@ internal sealed class KeyRepeatSettingsService : IKeyRepeatSettingsService, IDis
             {
                 _logger.LogError("KeyRepeat validation failed. Ignoring new settings.");
                 foreach (var error in result.Errors)
-                    LogValidationError(_logger, error.PropertyName, error.ErrorMessage, null);
+                    Log.ValidationError(_logger, error.PropertyName, error.ErrorMessage, null);
 
                 return;
             }
 
-            LogSuccess(_logger, "Key repeat settings updated successfully at runtime.", null);
+            Log.ConfigSuccess(_logger, "Key repeat settings updated successfully at runtime.", null);
             _settings = newSettings.KeyRepeat;
         });
     }
@@ -78,12 +53,39 @@ internal sealed class KeyRepeatSettingsService : IKeyRepeatSettingsService, IDis
             var mode = isRunning ? "FastMode" : "Default";
             var config = isRunning ? _settings.FastMode : _settings.Default;
 
-            LogApplySettings(_logger, mode, config.RepeatSpeed, config.RepeatDelay, null);
+            Log.ApplySettings(_logger, mode, config.RepeatSpeed, config.RepeatDelay, null);
             _keyboardSettingsApplier.ApplyRepeatSettings(config.RepeatSpeed, config.RepeatDelay);
         }
         catch (Exception ex)
         {
-            LogApplyFailed(_logger, ex);
+            Log.ApplyFailed(_logger, ex);
         }
+    }
+
+    private static class Log
+    {
+        public static readonly Action<ILogger, string, int, int, Exception?> ApplySettings =
+            LoggerMessage.Define<string, int, int>(
+                LogLevel.Information,
+                new EventId(1000, nameof(ApplySettings)),
+                "Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}");
+
+        public static readonly Action<ILogger, string, Exception?> ConfigSuccess =
+            LoggerMessage.Define<string>(
+                LogLevel.Information,
+                new EventId(1001, nameof(ConfigSuccess)),
+                "{Message}");
+
+        public static readonly Action<ILogger, string, string, Exception?> ValidationError =
+            LoggerMessage.Define<string, string>(
+                LogLevel.Error,
+                new EventId(1002, nameof(ValidationError)),
+                "{Property}: {Message}");
+
+        public static readonly Action<ILogger, Exception?> ApplyFailed =
+            LoggerMessage.Define(
+                LogLevel.Error,
+                new EventId(1003, nameof(ApplyFailed)),
+                "Failed to apply key repeat settings.");
     }
 }

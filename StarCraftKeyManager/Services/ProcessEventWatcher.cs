@@ -37,7 +37,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         if (string.Equals(_processName, sanitized, StringComparison.OrdinalIgnoreCase))
             return;
 
-        _logger.LogInformation("Reconfiguring WMI process watcher for {OldName} → {NewName}", _processName, sanitized);
+        Log.WatcherReconfigured(_logger, _processName, sanitized, null);
 
         Stop();
         _processName = sanitized;
@@ -64,11 +64,11 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
             _startWatcher.Start();
             _stopWatcher.Start();
 
-            _logger.LogInformation("WMI process watchers started.");
+            Log.WatchersStarted(_logger, null);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to start WMI process watchers for process: {ProcessName}", _processName);
+            Log.StartFailure(_logger, ex);
             throw;
         }
     }
@@ -85,11 +85,11 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
             _stopWatcher?.Dispose();
             _stopWatcher = null;
 
-            _logger.LogInformation("WMI process watchers stopped.");
+            Log.WatchersStopped(_logger, null);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to stop/reconfigure watchers.");
+            Log.StopFailure(_logger, ex);
         }
     }
 
@@ -102,8 +102,8 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
     {
         var args = _adapterFactory(e);
         var pid = args.GetProcessId();
-        _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
 
+        Log.StartEvent(_logger, pid, null);
         _ = _mediator.Publish(new ProcessStarted(pid, $"{_processName}.exe"));
     }
 
@@ -111,8 +111,53 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
     {
         var args = _adapterFactory(e);
         var pid = args.GetProcessId();
-        _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
 
+        Log.StopEvent(_logger, pid, null);
         _ = _mediator.Publish(new ProcessStopped(pid, $"{_processName}.exe"));
+    }
+
+    private static class Log
+    {
+        public static readonly Action<ILogger, int, Exception?> StartEvent =
+            LoggerMessage.Define<int>(
+                LogLevel.Information,
+                new EventId(2001, nameof(StartEvent)),
+                "WMI Start Event: PID {Pid}");
+
+        public static readonly Action<ILogger, int, Exception?> StopEvent =
+            LoggerMessage.Define<int>(
+                LogLevel.Information,
+                new EventId(2002, nameof(StopEvent)),
+                "WMI Stop Event: PID {Pid}");
+
+        public static readonly Action<ILogger, string, string, Exception?> WatcherReconfigured =
+            LoggerMessage.Define<string, string>(
+                LogLevel.Information,
+                new EventId(2003, nameof(WatcherReconfigured)),
+                "Reconfiguring WMI process watcher for {OldName} → {NewName}");
+
+        public static readonly Action<ILogger, Exception?> StartFailure =
+            LoggerMessage.Define(
+                LogLevel.Error,
+                new EventId(2004, nameof(StartFailure)),
+                "Failed to start WMI process watchers for process.");
+
+        public static readonly Action<ILogger, Exception?> StopFailure =
+            LoggerMessage.Define(
+                LogLevel.Warning,
+                new EventId(2005, nameof(StopFailure)),
+                "Failed to stop/reconfigure watchers.");
+
+        public static readonly Action<ILogger, Exception?> WatchersStarted =
+            LoggerMessage.Define(
+                LogLevel.Information,
+                new EventId(2006, nameof(WatchersStarted)),
+                "WMI process watchers started.");
+
+        public static readonly Action<ILogger, Exception?> WatchersStopped =
+            LoggerMessage.Define(
+                LogLevel.Information,
+                new EventId(2007, nameof(WatchersStopped)),
+                "WMI process watchers stopped.");
     }
 }

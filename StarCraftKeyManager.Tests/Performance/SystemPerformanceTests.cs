@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
@@ -46,10 +47,19 @@ public class SystemPerformanceTests
     }
 
     [Fact]
-    public async Task StartAsync_ShouldRunEfficiently()
+    public async Task ProcessMonitorService_ShouldHandleRapidEvents_Efficiently()
     {
-        await _processMonitorService.StartAsync(CancellationToken.None);
-        await Task.Delay(500);
-        await _processMonitorService.StopAsync(CancellationToken.None);
+        for (var i = 0; i < 100; i++)
+            await _processMonitorService.Handle(
+                new ProcessStarted(1000 + i, "starcraft.exe"),
+                CancellationToken.None);
+
+        for (var i = 0; i < 100; i++)
+            await _processMonitorService.Handle(
+                new ProcessStopped(1000 + i, "starcraft.exe"),
+                CancellationToken.None);
+
+        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(true), Times.Once);
+        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(false), Times.Once);
     }
 }
