@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
+using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
-using StarCraftKeyManager.Utilities;
 
 namespace StarCraftKeyManager.SystemAdapters.Wrappers;
 
@@ -8,7 +8,7 @@ internal sealed class ProcessProvider : IProcessProvider
 {
     public IEnumerable<int> GetProcessIdsByName(string name)
     {
-        var trimmed = ProcessNameSanitizer.Normalize(name);
+        var trimmed = new ProcessName(name).Value;
         return Process.GetProcessesByName(trimmed).Select(p => p.Id);
     }
 }

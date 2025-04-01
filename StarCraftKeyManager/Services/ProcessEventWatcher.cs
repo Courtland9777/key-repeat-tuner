@@ -1,10 +1,10 @@
 ﻿using System.Management;
 using MediatR;
+using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
 using StarCraftKeyManager.SystemAdapters.Wrappers;
-using StarCraftKeyManager.Utilities;
 
 namespace StarCraftKeyManager.Services;
 
@@ -32,7 +32,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 
     public void Configure(string processName)
     {
-        var sanitized = ProcessNameSanitizer.Normalize(processName);
+        var sanitized = new ProcessName(processName).Value;
 
         if (string.Equals(_processName, sanitized, StringComparison.OrdinalIgnoreCase))
             return;
@@ -51,9 +51,9 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
             if (_startWatcher != null || _stopWatcher != null) return;
 
             var startQuery =
-                $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{ProcessNameSanitizer.WithExe(_processName)}'";
+                $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{new ProcessName(_processName).WithExe()}'";
             var stopQuery =
-                $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{ProcessNameSanitizer.WithExe(_processName)}.exe'";
+                $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{new ProcessName(_processName).WithExe()}'";
 
             _startWatcher = _watcherFactory.Create(startQuery);
             _stopWatcher = _watcherFactory.Create(stopQuery);

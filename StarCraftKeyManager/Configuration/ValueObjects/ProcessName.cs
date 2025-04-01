@@ -6,21 +6,10 @@ public sealed partial class ProcessName
 {
     public ProcessName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Process name cannot be null or whitespace.", nameof(name));
-
-        var sanitized = Path.GetFileNameWithoutExtension(name.Trim());
-
-        if (!ValidPattern().IsMatch(sanitized))
-            throw new ArgumentException($"Invalid process name format: '{name}'", nameof(name));
-
-        Value = sanitized;
+        Value = Normalize(name);
     }
 
     public string Value { get; }
-
-    [GeneratedRegex("^[a-zA-Z0-9_-]+$")]
-    public static partial Regex ValidPattern();
 
     public override string ToString()
     {
@@ -35,5 +24,26 @@ public sealed partial class ProcessName
     public static implicit operator ProcessName(string name)
     {
         return new ProcessName(name);
+    }
+
+    [GeneratedRegex("^[a-zA-Z0-9_-]+$")]
+    public static partial Regex ValidPattern();
+
+    private static string Normalize(string processName)
+    {
+        if (string.IsNullOrWhiteSpace(processName))
+            throw new ArgumentException("Process name cannot be null or whitespace.", nameof(processName));
+
+        var nameOnly = Path.GetFileNameWithoutExtension(processName.Trim());
+
+        if (!ValidPattern().IsMatch(nameOnly))
+            throw new ArgumentException($"Invalid process name format: '{processName}'", nameof(processName));
+
+        return nameOnly;
+    }
+
+    public string WithExe()
+    {
+        return $"{Value}.exe";
     }
 }
