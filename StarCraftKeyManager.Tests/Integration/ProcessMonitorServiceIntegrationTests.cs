@@ -14,7 +14,6 @@ namespace StarCraftKeyManager.Tests.Integration;
 
 public class ProcessMonitorServiceIntegrationTests
 {
-    private readonly KeyRepeatSettings _keyRepeatSettings;
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
     private readonly string _processName;
@@ -55,7 +54,6 @@ public class ProcessMonitorServiceIntegrationTests
         );
 
         _processName = mockSettings.ProcessMonitor.ProcessName;
-        _keyRepeatSettings = mockSettings.KeyRepeat;
     }
 
     [Fact]
