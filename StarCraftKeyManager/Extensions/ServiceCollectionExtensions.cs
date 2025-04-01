@@ -1,7 +1,4 @@
 ﻿using FluentValidation;
-using FluentValidation.Results;
-using Microsoft.Extensions.Options;
-using Serilog;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Configuration.Validation;
 using StarCraftKeyManager.Events;
@@ -27,40 +24,7 @@ public static class ServiceCollectionExtensions
         builder.Services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
 
-        using var serviceProvider = builder.Services.BuildServiceProvider();
-        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<AppSettings>>();
-        var validator = serviceProvider.GetRequiredService<IValidator<AppSettings>>();
-        var changeValidator = new AppSettingsChangeValidator(validator);
-
-        // Initial validation
-        var appSettings = optionsMonitor.CurrentValue;
-        var validationResults = validator.Validate(appSettings);
-        if (!validationResults.IsValid)
-        {
-            LogValidationErrors(validationResults);
-            Log.Error("Configuration is invalid. Application startup aborted due to {ErrorCount} validation errors.",
-                validationResults.Errors.Count);
-
-            throw new InvalidOperationException(
-                "Invalid AppSettings detected. Please correct the errors and restart the application.");
-        }
-
-        // Runtime validation
-        optionsMonitor.OnChange(newSettings =>
-        {
-            if (!changeValidator.Validate(newSettings))
-                Log.Warning("Rejected invalid configuration update at runtime.");
-        });
-
         RegisterServices(builder.Services);
-    }
-
-
-    private static void LogValidationErrors(ValidationResult validationResults)
-    {
-        foreach (var failure in validationResults.Errors)
-            Log.Error("Validation error: {PropertyName} - {ErrorMessage}",
-                failure.PropertyName, failure.ErrorMessage);
     }
 
     private static void RegisterServices(IServiceCollection services)
@@ -72,5 +36,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IKeyRepeatSettingsService, KeyRepeatSettingsService>();
         services.AddSingleton<IProcessProvider, ProcessProvider>();
         services.AddSingleton<IUserContext, UserContext>();
+        services.AddHostedService<AppSettingsStartupValidator>();
     }
 }

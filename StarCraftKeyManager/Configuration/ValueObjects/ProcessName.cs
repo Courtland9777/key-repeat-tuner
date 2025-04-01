@@ -13,7 +13,7 @@ public sealed partial class ProcessName
 
     public override string ToString()
     {
-        return Value;
+        return Value ?? throw new InvalidOperationException("ProcessName is not initialized.");
     }
 
     public static implicit operator string(ProcessName pn)
