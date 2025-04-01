@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using FluentValidation;
+using Microsoft.Extensions.Options;
 using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
@@ -9,19 +10,22 @@ internal sealed class KeyRepeatSettingsService : IKeyRepeatSettingsService
 {
     private readonly IKeyboardSettingsApplier _keyboardSettingsApplier;
     private readonly ILogger<KeyRepeatSettingsService> _logger;
+    private readonly IValidator<AppSettings> _validator;
     private KeyRepeatSettings _settings;
-
 
     public KeyRepeatSettingsService(
         ILogger<KeyRepeatSettingsService> logger,
         IKeyboardSettingsApplier keyboardSettingsApplier,
-        IOptionsMonitor<AppSettings> optionsMonitor)
+        IOptionsMonitor<AppSettings> optionsMonitor,
+        IValidator<AppSettings> validator)
     {
         _logger = logger;
         _keyboardSettingsApplier = keyboardSettingsApplier;
+        _validator = validator;
+
         _settings = optionsMonitor.CurrentValue.KeyRepeat;
 
-        optionsMonitor.OnChange(newSettings => { _settings = newSettings.KeyRepeat; });
+        optionsMonitor.OnChange(OnSettingsChanged);
     }
 
     public void UpdateRunningState(bool isRunning)
@@ -40,5 +44,23 @@ internal sealed class KeyRepeatSettingsService : IKeyRepeatSettingsService
         {
             _logger.LogError(ex, "Failed to apply key repeat settings for state: Running={IsRunning}", isRunning);
         }
+    }
+
+    private void OnSettingsChanged(AppSettings newSettings)
+    {
+        var result = _validator.Validate(newSettings);
+
+        if (!result.IsValid)
+        {
+            _logger.LogWarning("Rejected invalid key repeat settings update at runtime.");
+            foreach (var failure in result.Errors.Where(failure => failure.PropertyName.StartsWith("KeyRepeat")))
+                _logger.LogWarning("KeyRepeat validation failed: {Property} - {Message}",
+                    failure.PropertyName, failure.ErrorMessage);
+
+            return;
+        }
+
+        _logger.LogInformation("Key repeat settings updated successfully at runtime.");
+        _settings = newSettings.KeyRepeat;
     }
 }

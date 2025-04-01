@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 using Serilog;
 using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Configuration.Validation;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
@@ -20,12 +21,16 @@ public static class ServiceCollectionExtensions
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddValidatorsFromAssemblyContaining<AppSettingsValidator>();
+        builder.Services.AddSingleton<AppSettingsChangeValidator>();
 
         using var serviceProvider = builder.Services.BuildServiceProvider();
-        var appSettings = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<AppSettings>>();
         var validator = serviceProvider.GetRequiredService<IValidator<AppSettings>>();
-        var validationResults = validator.Validate(appSettings);
+        var changeValidator = new AppSettingsChangeValidator(validator);
 
+        // Initial validation
+        var appSettings = optionsMonitor.CurrentValue;
+        var validationResults = validator.Validate(appSettings);
         if (!validationResults.IsValid)
         {
             LogValidationErrors(validationResults);
@@ -36,8 +41,16 @@ public static class ServiceCollectionExtensions
                 "Invalid AppSettings detected. Please correct the errors and restart the application.");
         }
 
+        // Runtime validation
+        optionsMonitor.OnChange(newSettings =>
+        {
+            if (!changeValidator.Validate(newSettings))
+                Log.Warning("Rejected invalid configuration update at runtime.");
+        });
+
         RegisterServices(builder.Services);
     }
+
 
     private static void LogValidationErrors(ValidationResult validationResults)
     {
