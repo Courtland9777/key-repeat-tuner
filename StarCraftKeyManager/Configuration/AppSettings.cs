@@ -2,6 +2,6 @@
 
 public class AppSettings
 {
-    public ProcessMonitorSettings ProcessMonitor { get; set; } = new();
+    public required string ProcessName { get; set; }
     public required KeyRepeatSettings KeyRepeat { get; set; }
 }

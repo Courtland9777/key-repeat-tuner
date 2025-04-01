@@ -26,7 +26,7 @@ public class SystemPerformanceTests
 
         var settings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },

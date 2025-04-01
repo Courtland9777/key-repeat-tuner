@@ -30,7 +30,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         _keyRepeatService = keyRepeatService;
 
         var settings = optionsMonitor.CurrentValue;
-        _processName = ProcessNameSanitizer.Normalize(settings.ProcessMonitor.ProcessName);
+        _processName = ProcessNameSanitizer.Normalize(settings.ProcessName);
 
         _processEventWatcher.Configure(_processName);
         _processEventWatcher.ProcessEventOccurred += OnProcessEventOccurred;
@@ -38,7 +38,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         optionsMonitor.OnChange(updatedSettings =>
         {
             _logger.LogInformation("Configuration updated: {@Settings}", updatedSettings);
-            _processName = ProcessNameSanitizer.Normalize(updatedSettings.ProcessMonitor.ProcessName);
+            _processName = ProcessNameSanitizer.Normalize(updatedSettings.ProcessName);
             _processEventWatcher.Configure(_processName);
             _keyRepeatService.UpdateRunningState(IsRunning);
         });

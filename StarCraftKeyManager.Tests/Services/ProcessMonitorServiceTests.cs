@@ -27,7 +27,7 @@ public class ProcessMonitorServiceTests
 
         var mockSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -55,7 +55,7 @@ public class ProcessMonitorServiceTests
     [Fact]
     public void ProcessEventOccurred_ShouldApplySettings_WhenProcessStarts()
     {
-        _processMonitorService.HandleProcessEvent(new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe"));
+        _processMonitorService.HandleProcessEvent(new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft"));
 
         _mockKeyRepeatSettingsService.Verify(x => x.UpdateRunningState(true), Times.Once);
     }
@@ -63,10 +63,10 @@ public class ProcessMonitorServiceTests
     [Fact]
     public void ProcessEventOccurred_ShouldApplySettings_WhenLastProcessStops()
     {
-        _processMonitorService.HandleProcessEvent(new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe"));
+        _processMonitorService.HandleProcessEvent(new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft"));
         _mockKeyRepeatSettingsService.Invocations.Clear();
 
-        _processMonitorService.HandleProcessEvent(new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe"));
+        _processMonitorService.HandleProcessEvent(new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft"));
 
         _mockKeyRepeatSettingsService.Verify(x => x.UpdateRunningState(false), Times.Once);
     }

@@ -23,7 +23,7 @@ public class AppSettingsValidatorTests
     {
         var validSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -44,7 +44,7 @@ public class AppSettingsValidatorTests
 
         var settings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = string.Empty },
+            ProcessName = string.Empty,
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -55,9 +55,10 @@ public class AppSettingsValidatorTests
         var result = validator.Validate(settings);
 
         Assert.False(result.IsValid);
+
         Assert.Contains(result.Errors,
-            e => e.PropertyName == "ProcessMonitor.ProcessName" &&
-                 e.ErrorMessage.Contains("valid executable format", StringComparison.OrdinalIgnoreCase));
+            e => e.PropertyName == "ProcessName" &&
+                 e.ErrorMessage.Contains("valid process name", StringComparison.OrdinalIgnoreCase));
 
         mockLogger.Verify(logger => logger.Log(
             LogLevel.Error,
@@ -74,7 +75,7 @@ public class AppSettingsValidatorTests
         // Arrange
         var initialSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -84,11 +85,11 @@ public class AppSettingsValidatorTests
 
         var updatedSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "" }, // Invalid
+            ProcessName = string.Empty,
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = new KeyRepeatState { RepeatSpeed = 50, RepeatDelay = 2000 }, // Invalid
-                FastMode = new KeyRepeatState { RepeatSpeed = -1, RepeatDelay = 100 } // Invalid
+                Default = new KeyRepeatState { RepeatSpeed = 50, RepeatDelay = 2000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = -1, RepeatDelay = 100 }
             }
         };
 
@@ -104,7 +105,8 @@ public class AppSettingsValidatorTests
 
         // Assert
         Assert.False(updatedResult.IsValid);
-        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "ProcessMonitor.ProcessName");
+
+        Assert.Contains(updatedResult.Errors, e => e.PropertyName == "ProcessName");
         Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.Default.RepeatSpeed");
         Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.Default.RepeatDelay");
         Assert.Contains(updatedResult.Errors, e => e.PropertyName == "KeyRepeat.FastMode.RepeatSpeed");
@@ -121,7 +123,7 @@ public class AppSettingsValidatorTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = repeatSpeed, RepeatDelay = repeatDelay },
@@ -137,31 +139,11 @@ public class AppSettingsValidatorTests
     }
 
     [Fact]
-    public void MissingProcessMonitor_ShouldFailValidation()
-    {
-        var settings = new AppSettings
-        {
-            ProcessMonitor = null!, // Invalid
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
-            }
-        };
-
-        var result = _validator.Validate(settings);
-
-        Assert.False(result.IsValid, "Expected configuration to be invalid due to missing ProcessMonitor.");
-        Assert.Contains(result.Errors, e => e.PropertyName == "ProcessMonitor");
-    }
-
-
-    [Fact]
     public void MissingKeyRepeatSettings_ShouldFailValidation()
     {
         var invalidSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = null!,
@@ -182,7 +164,7 @@ public class AppSettingsValidatorTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = null!, // trigger validation error
@@ -203,7 +185,7 @@ public class AppSettingsValidatorTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },

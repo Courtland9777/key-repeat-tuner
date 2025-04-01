@@ -7,6 +7,7 @@ using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
 using StarCraftKeyManager.Tests.TestUtilities.Extensions;
+using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
@@ -27,7 +28,7 @@ public class ProcessMonitorServiceIntegrationTests
 
         var mockSettings = new AppSettings
         {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
+            ProcessName = "starcraft",
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -77,15 +78,15 @@ public class ProcessMonitorServiceIntegrationTests
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe"));
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft"));
 
         _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(true), Times.Once);
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe"));
+            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft"));
 
-        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(false), Times.Once);
+        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(false), Times.Exactly(2));
 
         _mockLogger.Verify(log => log.Log(
             LogLevel.Information,
@@ -93,5 +94,68 @@ public class ProcessMonitorServiceIntegrationTests
             MoqLogExtensions.MatchLogState("Process running state changed to False. Updating key repeat settings..."),
             null,
             It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+
+        var sequence = _mockKeyRepeatSettingsService.Invocations
+            .Where(i => i.Method.Name == nameof(IKeyRepeatSettingsService.UpdateRunningState))
+            .Select(i => (bool)i.Arguments[0])
+            .ToArray();
+
+        Assert.Equal([false, true, false], sequence);
+    }
+
+
+    [Fact]
+    public void ConfigurationUpdated_ShouldApplyNewSettings_WhenConfigurationChanges()
+    {
+        // Arrange
+        var appSettings = new AppSettings
+        {
+            ProcessName = "starcraft",
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+            }
+        };
+
+        var testOptionsMonitor = new TestOptionsMonitor<AppSettings>(appSettings);
+
+        var mockProcessEventWatcher = new Mock<IProcessEventWatcher>();
+        var mockKeyRepeatService = new Mock<IKeyRepeatSettingsService>();
+        var mockLogger = new Mock<ILogger<ProcessMonitorService>>();
+        var mockProvider = new Mock<IProcessProvider>();
+        mockProvider.Setup(p => p.GetProcessIdsByName(It.IsAny<string>())).Returns([]);
+
+        var _ = new ProcessMonitorService(
+            mockLogger.Object,
+            testOptionsMonitor,
+            mockProcessEventWatcher.Object,
+            mockProvider.Object,
+            mockKeyRepeatService.Object
+        );
+
+        // Act - trigger config change
+        var newSettings = new AppSettings
+        {
+            ProcessName = "sc2",
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 40, RepeatDelay = 1200 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 400 }
+            }
+        };
+
+        testOptionsMonitor.TriggerChange(newSettings);
+
+        // Assert
+        mockProcessEventWatcher.Verify(w => w.Configure("sc2"), Times.Once);
+        mockKeyRepeatService.Verify(s => s.UpdateRunningState(It.IsAny<bool>()), Times.Once);
+        mockLogger.Verify(l => l.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Configuration updated:"),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+        ), Times.Once);
     }
 }

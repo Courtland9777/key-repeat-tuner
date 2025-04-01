@@ -7,39 +7,26 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
 {
     public AppSettingsValidator(ILogger<AppSettingsValidator>? logger = null)
     {
-        RuleFor(x => x.ProcessMonitor)
-            .NotNull()
-            .WithMessage("ProcessMonitor must be provided.")
-            .SetValidator(new ProcessMonitorSettingsValidator(logger));
+        RuleFor(x => x.ProcessName)
+            .NotEmpty().WithMessage("ProcessName must be specified.")
+            .Must(name =>
+            {
+                try
+                {
+                    _ = ProcessNameSanitizer.Normalize(name);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError(ex, "Validation failed for ProcessName: {Input}", name);
+                    return false;
+                }
+            })
+            .WithMessage("ProcessName must be a valid process name (e.g., notepad, starcraft). Do not include '.exe'.");
 
         RuleFor(x => x.KeyRepeat)
-            .NotNull()
-            .WithMessage("KeyRepeat settings must be provided.")
+            .NotNull().WithMessage("KeyRepeat settings must be provided.")
             .SetValidator(new KeyRepeatSettingsValidator());
-    }
-
-    private class ProcessMonitorSettingsValidator : AbstractValidator<ProcessMonitorSettings>
-    {
-        public ProcessMonitorSettingsValidator(ILogger<AppSettingsValidator>? logger = null)
-        {
-            RuleFor(x => x.ProcessName)
-                .NotEmpty().WithMessage("ProcessName must be specified.")
-                .Must(name =>
-                {
-                    try
-                    {
-                        _ = ProcessNameSanitizer.Normalize(name);
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        logger?.LogError(ex, "Validation failed for ProcessName: {Input}", name);
-                        return false;
-                    }
-                })
-                .WithMessage(
-                    "ProcessName must be a valid process name (e.g., notepad, starcraft). Do not include '.exe'.");
-        }
     }
 
     private class KeyRepeatSettingsValidator : AbstractValidator<KeyRepeatSettings>
