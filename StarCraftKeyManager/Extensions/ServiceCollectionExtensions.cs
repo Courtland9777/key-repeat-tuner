@@ -29,24 +29,25 @@ public static class ServiceCollectionExtensions
         if (!validationResults.IsValid)
         {
             LogValidationErrors(validationResults);
-            Log.Error("Using default key repeat settings due to invalid configuration.");
+            Log.Error("Configuration is invalid. Application startup aborted due to {ErrorCount} validation errors.",
+                validationResults.Errors.Count);
+
             throw new InvalidOperationException(
                 "Invalid AppSettings detected. Please correct the errors and restart the application.");
         }
 
-        RegisterServices(builder.Services, builder.Configuration);
+        RegisterServices(builder.Services);
     }
 
     private static void LogValidationErrors(ValidationResult validationResults)
     {
         foreach (var failure in validationResults.Errors)
-            Log.Warning("Invalid configuration: {PropertyName} - {ErrorMessage}",
+            Log.Error("Validation error: {PropertyName} - {ErrorMessage}",
                 failure.PropertyName, failure.ErrorMessage);
     }
 
-    private static void RegisterServices(IServiceCollection services, IConfiguration configuration)
+    private static void RegisterServices(IServiceCollection services)
     {
-        services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings)));
         services.AddSingleton<ProcessMonitorService>();
         services.AddHostedService(provider => provider.GetRequiredService<ProcessMonitorService>());
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
