@@ -23,25 +23,33 @@ public static class ServiceCollectionExtensions
         builder.Services.AddValidatorsFromAssemblyContaining<AppSettingsValidator>();
         builder.Services.AddSingleton<AppSettingsChangeValidator>();
         builder.Services.AddSingleton<IAppSettingsChangeHandler, KeyRepeatSettingsService>();
-        builder.Services.AddHealthChecks()
-            .AddCheck<ProcessWatcherHealthCheck>("Process Watcher");
-        builder.Services.AddSingleton<IHealthCheck, ProcessWatcherHealthCheck>();
 
         builder.Services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
 
-        RegisterServices(builder.Services);
+        builder.Services.AddInfrastructureServices();
+        builder.Services.AddMonitoringServices();
     }
 
-    private static void RegisterServices(IServiceCollection services)
+    private static void AddInfrastructureServices(this IServiceCollection services)
     {
-        services.AddSingleton<ProcessMonitorService>();
-        services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
-        services.AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>();
-        services.AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>();
-        services.AddSingleton<IKeyRepeatSettingsService, KeyRepeatSettingsService>();
-        services.AddSingleton<IProcessProvider, ProcessProvider>();
-        services.AddSingleton<IUserContext, UserContext>();
-        services.AddHostedService<AppSettingsStartupValidator>();
+        services
+            .AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>()
+            .AddSingleton<IKeyRepeatSettingsService, KeyRepeatSettingsService>()
+            .AddSingleton<IProcessProvider, ProcessProvider>()
+            .AddSingleton<IUserContext, UserContext>()
+            .AddSingleton<IProcessEventWatcher, ProcessEventWatcher>()
+            .AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>()
+            .AddSingleton<ProcessMonitorService>();
+    }
+
+    private static void AddMonitoringServices(this IServiceCollection services)
+    {
+        services
+            .AddSingleton<IHealthCheck, ProcessWatcherHealthCheck>()
+            .AddHealthChecks()
+            .AddCheck<ProcessWatcherHealthCheck>("Process Watcher")
+            .Services
+            .AddHostedService<AppSettingsStartupValidator>();
     }
 }

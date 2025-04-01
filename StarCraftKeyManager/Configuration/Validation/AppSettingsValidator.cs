@@ -24,6 +24,7 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
                 {
                     RuleFor(x => x.Default.RepeatSpeed).IsRepeatSpeed();
                     RuleFor(x => x.Default.RepeatDelay).IsRepeatDelay();
+                    RuleFor(x => x.Default).HasErgonomicBalance();
                 });
 
             RuleFor(x => x.FastMode)
@@ -32,6 +33,7 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
                 {
                     RuleFor(x => x.FastMode.RepeatSpeed).IsRepeatSpeed();
                     RuleFor(x => x.FastMode.RepeatDelay).IsRepeatDelay();
+                    RuleFor(x => x.FastMode).HasErgonomicBalance();
                 });
         }
     }
