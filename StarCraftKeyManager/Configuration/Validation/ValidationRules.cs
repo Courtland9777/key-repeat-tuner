@@ -26,16 +26,4 @@ public static class ValidationRules
             .InclusiveBetween(250, 1000)
             .WithMessage("RepeatDelay must be between 250ms and 1000ms.");
     }
-
-    /// <summary>
-    ///     Validates ergonomic rule: RepeatSpeed should be lower than RepeatDelay.
-    ///     This is a soft constraint to prevent sluggish or extreme combos.
-    /// </summary>
-    public static IRuleBuilderOptions<T, KeyRepeatState> HasErgonomicBalance<T>(
-        this IRuleBuilder<T, KeyRepeatState> ruleBuilder)
-    {
-        return ruleBuilder.Must(state =>
-                state.RepeatSpeed * 30 < state.RepeatDelay)
-            .WithMessage("RepeatSpeed * 30 should be less than RepeatDelay for better ergonomics.");
-    }
 }
