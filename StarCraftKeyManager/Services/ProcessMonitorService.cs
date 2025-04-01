@@ -46,10 +46,14 @@ public sealed class ProcessMonitorService : BackgroundService,
     private Task OnRunningStateChangedIfNeeded()
     {
         var current = IsRunning;
-        if (_lastKnownRunningState == current) return Task.CompletedTask;
+
+        if (_lastKnownRunningState == current)
+            return Task.CompletedTask;
+
+        _lastKnownRunningState = current;
+
         _logger.LogInformation("Process running state changed to: {IsRunning}", current);
         _keyRepeatSettingsService.UpdateRunningState(current);
-        _lastKnownRunningState = current;
 
         return Task.CompletedTask;
     }
