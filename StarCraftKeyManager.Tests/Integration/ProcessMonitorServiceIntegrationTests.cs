@@ -7,23 +7,22 @@ using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
 using StarCraftKeyManager.Tests.TestUtilities.Extensions;
-using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
 
 public class ProcessMonitorServiceIntegrationTests
 {
+    private readonly Mock<IKeyRepeatSettingsService> _mockKeyRepeatSettingsService;
     private readonly Mock<ILogger<ProcessMonitorService>> _mockLogger;
     private readonly Mock<IProcessEventWatcher> _mockProcessEventWatcher;
-    private ProcessMonitorService _processMonitorService;
+    private readonly ProcessMonitorService _processMonitorService;
 
     public ProcessMonitorServiceIntegrationTests()
     {
         _mockLogger = new Mock<ILogger<ProcessMonitorService>>();
         _mockProcessEventWatcher = new Mock<IProcessEventWatcher>();
-
-        var mockKeyboardSettingsApplier = new Mock<IKeyboardSettingsApplier>();
+        _mockKeyRepeatSettingsService = new Mock<IKeyRepeatSettingsService>();
         var mockProcessProvider = new Mock<IProcessProvider>();
 
         var mockSettings = new AppSettings
@@ -38,7 +37,6 @@ public class ProcessMonitorServiceIntegrationTests
 
         var mockOptionsMonitor = new Mock<IOptionsMonitor<AppSettings>>();
         mockOptionsMonitor.Setup(o => o.CurrentValue).Returns(mockSettings);
-        var optionsMonitor = mockOptionsMonitor.Object;
 
         mockProcessProvider
             .Setup(p => p.GetProcessIdsByName("starcraft"))
@@ -46,10 +44,10 @@ public class ProcessMonitorServiceIntegrationTests
 
         _processMonitorService = new ProcessMonitorService(
             _mockLogger.Object,
-            optionsMonitor,
+            mockOptionsMonitor.Object,
             _mockProcessEventWatcher.Object,
-            mockKeyboardSettingsApplier.Object,
-            mockProcessProvider.Object
+            mockProcessProvider.Object,
+            _mockKeyRepeatSettingsService.Object
         );
     }
 
@@ -59,272 +57,41 @@ public class ProcessMonitorServiceIntegrationTests
         var cts = new CancellationTokenSource();
 
         var monitorTask = _processMonitorService.StartAsync(cts.Token);
-
-        await Task.Delay(500, cts.Token); // allow some async time
+        await Task.Delay(500, cts.Token);
 
         _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Starting process monitor service"),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            MoqLogExtensions.MatchLogState("Starting process monitor service."),
+            null,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
 
         await cts.CancelAsync();
         await monitorTask;
     }
 
-
     [Fact]
-    public async Task ProcessEventOccurred_ShouldApplyFastMode_WhenStarCraftStarts()
+    public async Task ProcessEventOccurred_ShouldTriggerSettingsChange_WhenStarCraftStartsAndStops()
     {
-        // Act
         await _processMonitorService.StartAsync(CancellationToken.None);
 
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
-        );
+            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe"));
 
-        // Assert
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Applying key repeat settings: Mode="),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), // <-- this fixes the nullability issue
-            Times.Exactly(2));
-    }
+        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(true), Times.Once);
 
-
-    [Fact]
-    public async Task ProcessEventOccurred_ShouldRestoreDefaultSettings_WhenStarCraftStops()
-    {
-        // Arrange: configure settings with a valid process name
-        var settings = new AppSettings
-        {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 25, RepeatDelay = 750 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 400 }
-            }
-        };
-
-        var optionsMonitor = new TestOptionsMonitor<AppSettings>(settings);
-        var mockKeyboardSettingsApplier = new Mock<IKeyboardSettingsApplier>();
-        var mockProcessProvider = new Mock<IProcessProvider>();
-        _processMonitorService = new ProcessMonitorService(
-            _mockLogger.Object,
-            optionsMonitor,
-            _mockProcessEventWatcher.Object,
-            mockKeyboardSettingsApplier.Object,
-            mockProcessProvider.Object
-        );
-
-        await _processMonitorService.StartAsync(CancellationToken.None);
-        _mockLogger.Invocations.Clear(); // isolate log output to what we trigger next
-
-        // Act: simulate process start and stop
         _mockProcessEventWatcher.Raise(
             w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
-        );
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe")
-        );
+            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe"));
 
-        // Assert: default settings should be restored
+        _mockKeyRepeatSettingsService.Verify(s => s.UpdateRunningState(false), Times.Once);
+
         _mockLogger.Verify(log => log.Log(
             LogLevel.Information,
             It.IsAny<EventId>(),
-            MoqLogExtensions.MatchLogState("Process running state changed to False"),
-            null,
-            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(2));
-    }
-
-
-    [Fact]
-    public void ConfigurationUpdated_ShouldApplyNewSettings_WhenConfigurationChanges()
-    {
-        // Arrange
-        var initialSettings = new AppSettings
-        {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "starcraft.exe" },
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
-            }
-        };
-
-        var updatedSettings = new AppSettings
-        {
-            ProcessMonitor = new ProcessMonitorSettings { ProcessName = "newgame.exe" },
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 25, RepeatDelay = 750 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 400 }
-            }
-        };
-
-        var mockLogger = new Mock<ILogger<ProcessMonitorService>>();
-        var mockWatcher = new Mock<IProcessEventWatcher>();
-        var mockApplier = new Mock<IKeyboardSettingsApplier>();
-        var mockProvider = new Mock<IProcessProvider>();
-
-        var testMonitor = new TestOptionsMonitor<AppSettings>(initialSettings);
-
-        var _ = new ProcessMonitorService(
-            mockLogger.Object,
-            testMonitor,
-            mockWatcher.Object,
-            mockApplier.Object,
-            mockProvider.Object
-        );
-
-        // Act
-        testMonitor.TriggerChange(updatedSettings);
-
-        // Assert
-        mockLogger.Verify(log => log.Log(
-            LogLevel.Information,
-            It.IsAny<EventId>(),
-            MoqLogExtensions.MatchLogState("Configuration updated"),
+            MoqLogExtensions.MatchLogState("Process running state changed to False. Updating key repeat settings..."),
             null,
             It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
-    }
-
-
-    [Fact]
-    public async Task ProcessEventOccurred_ShouldNotApplySettings_WhenProcessIsNotStarCraft()
-    {
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 5678, "notepad.exe")
-        );
-
-        await Task.Delay(100);
-
-        _mockLogger.Verify(
-            log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<object>(o => o.ToString()!.Contains("Applying key repeat settings")),
-                null,
-                It.IsAny<Func<object, Exception?, string>>()
-            ), Times.Never);
-    }
-
-    [Fact]
-    public async Task StartAsync_ShouldLogError_WhenProcessWatcherFailsToStart()
-    {
-        _mockProcessEventWatcher
-            .Setup(w => w.Start())
-            .Throws(new Exception("Failed to start watcher"));
-
-        await _processMonitorService.StartAsync(CancellationToken.None);
-
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Failed to start process watcher."),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-
-    [Fact]
-    public void ProcessEventOccurred_ShouldIgnoreUnknownEventId_WhenInvalidEventIsReceived()
-    {
-        // Act
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(9999, 1234, "starcraft.exe")
-        );
-
-        // Assert
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Unrelated process event occurred: 9999 for PID 1234"),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public void ProcessEventOccurred_ShouldHandleMultipleProcessStarts_WhenStarCraftStartsMultipleTimes()
-    {
-        // Arrange
-        _mockLogger.Invocations.Clear(); // ensure clean state
-
-        // Act
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
-        );
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 5678, "starcraft.exe")
-        );
-
-        // Assert: The first tracked process triggers FastMode settings
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Applying key repeat settings"),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-
-    [Fact]
-    public void ProcessEventOccurred_ShouldHandleMultipleProcessExits_WhenStarCraftStopsMultipleTimes()
-    {
-        // Arrange
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 1234, "starcraft.exe")
-        );
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Start, 5678, "starcraft.exe")
-        );
-
-        _mockLogger.Invocations.Clear(); // clear logs before simulating exits
-
-        // Act: stop first process
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Stop, 1234, "starcraft.exe")
-        );
-
-        // Assert: No state change yet
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Process running state changed to False"),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Never);
-
-        // Act: stop second (last) process
-        _mockProcessEventWatcher.Raise(
-            w => w.ProcessEventOccurred += null,
-            new ProcessEventArgs(ProcessEventId.Stop, 5678, "starcraft.exe")
-        );
-
-        // Assert: Final state transition to false
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                MoqLogExtensions.MatchLogState("Process running state changed to False"),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 }

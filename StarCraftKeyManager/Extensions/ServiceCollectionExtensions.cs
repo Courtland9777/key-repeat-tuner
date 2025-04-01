@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IProcessEventWatcher, ProcessEventWatcher>();
         services.AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>();
         services.AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>();
+        services.AddSingleton<IKeyRepeatSettingsService, KeyRepeatSettingsService>();
         services.AddSingleton<IProcessProvider, ProcessProvider>();
         services.AddSingleton<IUserContext, UserContext>();
     }

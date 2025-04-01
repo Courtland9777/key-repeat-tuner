@@ -10,29 +10,27 @@ namespace StarCraftKeyManager.Services;
 
 internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitorService
 {
-    private readonly IKeyboardSettingsApplier _keyboardSettingsApplier;
+    private readonly IKeyRepeatSettingsService _keyRepeatService;
     private readonly ILogger<ProcessMonitorService> _logger;
     private readonly IProcessEventWatcher _processEventWatcher;
     private readonly IProcessProvider _processProvider;
     private readonly ConcurrentDictionary<int, byte> _trackedProcesses = new();
-    private KeyRepeatSettings _keyRepeatSettings;
     private string _processName;
 
     public ProcessMonitorService(
         ILogger<ProcessMonitorService> logger,
         IOptionsMonitor<AppSettings> optionsMonitor,
         IProcessEventWatcher processEventWatcher,
-        IKeyboardSettingsApplier keyboardSettingsApplier,
-        IProcessProvider processProvider)
+        IProcessProvider processProvider,
+        IKeyRepeatSettingsService keyRepeatService)
     {
         _logger = logger;
         _processEventWatcher = processEventWatcher;
-        _keyboardSettingsApplier = keyboardSettingsApplier;
         _processProvider = processProvider;
+        _keyRepeatService = keyRepeatService;
 
         var settings = optionsMonitor.CurrentValue;
         _processName = ProcessNameSanitizer.Normalize(settings.ProcessMonitor.ProcessName);
-        _keyRepeatSettings = settings.KeyRepeat;
 
         _processEventWatcher.Configure(_processName);
         _processEventWatcher.ProcessEventOccurred += OnProcessEventOccurred;
@@ -41,9 +39,8 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         {
             _logger.LogInformation("Configuration updated: {@Settings}", updatedSettings);
             _processName = ProcessNameSanitizer.Normalize(updatedSettings.ProcessMonitor.ProcessName);
-            _keyRepeatSettings = updatedSettings.KeyRepeat;
             _processEventWatcher.Configure(_processName);
-            ApplyKeyRepeatSettings();
+            _keyRepeatService.UpdateRunningState(IsRunning);
         });
     }
 
@@ -55,7 +52,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
         {
             _logger.LogInformation("Starting process monitor service.");
             _processEventWatcher.Start();
-            _logger.LogInformation("Applying key repeat settings for {ProcessName}",
+            _logger.LogInformation("Monitoring process: {ProcessName}",
                 ProcessNameSanitizer.WithExe(_processName));
         }
         catch (Exception ex)
@@ -69,7 +66,7 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
             _trackedProcesses.TryAdd(pid, 0);
 
         _logger.LogInformation("Initial tracked processes: {Count}", _trackedProcesses.Count);
-        ApplyKeyRepeatSettings();
+        _keyRepeatService.UpdateRunningState(IsRunning);
 
         try
         {
@@ -88,6 +85,11 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
     }
 
     private void OnProcessEventOccurred(object? sender, ProcessEventArgs e)
+    {
+        HandleProcessEvent(e);
+    }
+
+    internal void HandleProcessEvent(ProcessEventArgs e)
     {
         var wasRunning = IsRunning;
 
@@ -109,29 +111,6 @@ internal sealed class ProcessMonitorService : BackgroundService, IProcessMonitor
 
         _logger.LogInformation("Process running state changed to {IsRunning}. Updating key repeat settings...",
             IsRunning);
-        ApplyKeyRepeatSettings();
-    }
-
-
-    internal void ApplyKeyRepeatSettings()
-    {
-        try
-        {
-            var settings = IsRunning ? _keyRepeatSettings.FastMode : _keyRepeatSettings.Default;
-
-            _logger.LogInformation(
-                "Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay} for {ProcessName}",
-                IsRunning ? "FastMode" : "Default",
-                settings.RepeatSpeed,
-                settings.RepeatDelay,
-                ProcessNameSanitizer.WithExe(_processName));
-
-
-            _keyboardSettingsApplier.ApplyRepeatSettings(settings.RepeatSpeed, settings.RepeatDelay);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to apply key repeat settings. Running={IsRunning}", IsRunning);
-        }
+        _keyRepeatService.UpdateRunningState(IsRunning);
     }
 }
