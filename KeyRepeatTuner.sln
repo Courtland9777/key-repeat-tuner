@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyRepeatTuner", "StarCraftKeyManager\KeyRepeatTuner.csproj", "{A42076F1-ACF8-48E3-8B50-6D2F10178140}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyRepeatTuner", "KeyRepeatTuner\KeyRepeatTuner.csproj", "{A42076F1-ACF8-48E3-8B50-6D2F10178140}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyRepeatTuner.Tests", "StarCraftKeyManager.Tests\KeyRepeatTuner.Tests.csproj", "{A48680A8-B92E-400A-B481-84FA5FA08141}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyRepeatTuner.Tests", "KeyRepeatTuner.Tests\KeyRepeatTuner.Tests.csproj", "{A48680A8-B92E-400A-B481-84FA5FA08141}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A42076F1-ACF8-48E3-8B50-6D2F10178140} = {A42076F1-ACF8-48E3-8B50-6D2F10178140}
 	EndProjectSection

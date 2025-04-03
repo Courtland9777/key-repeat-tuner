@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StarCraftKeyManager\KeyRepeatTuner.csproj" />
+    <ProjectReference Include="..\KeyRepeatTuner\KeyRepeatTuner.csproj" />
     <Content Include="..\xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
