@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using Serilog;
 
-namespace StarCraftKeyManager.Configuration.Validation;
+namespace KeyRepeatTuner.Configuration.Validation;
 
 public class AppSettingsChangeValidator
 {

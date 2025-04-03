@@ -1,8 +1,8 @@
-﻿using MediatR;
-using StarCraftKeyManager.Events;
-using StarCraftKeyManager.Interfaces;
+﻿using KeyRepeatTuner.Events;
+using KeyRepeatTuner.Interfaces;
+using MediatR;
 
-namespace StarCraftKeyManager.Services;
+namespace KeyRepeatTuner.Services;
 
 public sealed class ProcessStateTracker : INotificationHandler<ProcessStarted>, INotificationHandler<ProcessStopped>
 {

@@ -1,11 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using KeyRepeatTuner.Events;
+using KeyRepeatTuner.Interfaces;
+using KeyRepeatTuner.Services;
+using Microsoft.Extensions.Logging;
 using Moq;
-using StarCraftKeyManager.Events;
-using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Services;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Integration;
+namespace KeyRepeatTuner.Tests.Integration;
 
 public class ProcessStateTrackerIntegrationTests
 {

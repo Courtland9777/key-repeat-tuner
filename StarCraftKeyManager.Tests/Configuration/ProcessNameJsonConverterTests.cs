@@ -1,10 +1,10 @@
 ﻿using System.Text.Json;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Configuration.Converters;
-using StarCraftKeyManager.Configuration.ValueObjects;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.Converters;
+using KeyRepeatTuner.Configuration.ValueObjects;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Configuration;
+namespace KeyRepeatTuner.Tests.Configuration;
 
 public class ProcessNameJsonConverterTests
 {

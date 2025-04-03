@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>StarCraftKeyManager.Tests</_Parameter1>
+      <_Parameter1>KeyRepeatTuner.Tests</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>DynamicProxyGenAssembly2</_Parameter1>

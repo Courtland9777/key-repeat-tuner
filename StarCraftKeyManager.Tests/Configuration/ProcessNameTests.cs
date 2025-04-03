@@ -1,7 +1,7 @@
-﻿using StarCraftKeyManager.Configuration.ValueObjects;
+﻿using KeyRepeatTuner.Configuration.ValueObjects;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Configuration;
+namespace KeyRepeatTuner.Tests.Configuration;
 
 public class ProcessNameTests
 {

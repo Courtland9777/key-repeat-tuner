@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
-using StarCraftKeyManager.Configuration.Converters;
-using StarCraftKeyManager.Configuration.ValueObjects;
+using KeyRepeatTuner.Configuration.Converters;
+using KeyRepeatTuner.Configuration.ValueObjects;
 
-namespace StarCraftKeyManager.Configuration;
+namespace KeyRepeatTuner.Configuration;
 
 public class AppSettings
 {

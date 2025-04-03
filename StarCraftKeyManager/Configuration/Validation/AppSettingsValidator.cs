@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace StarCraftKeyManager.Configuration.Validation;
+namespace KeyRepeatTuner.Configuration.Validation;
 
 public class AppSettingsValidator : AbstractValidator<AppSettings>
 {

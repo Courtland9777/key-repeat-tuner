@@ -1,4 +1,4 @@
-﻿namespace StarCraftKeyManager.SystemAdapters.Interfaces;
+﻿namespace KeyRepeatTuner.SystemAdapters.Interfaces;
 
 public interface IManagementEventWatcherFactory
 {

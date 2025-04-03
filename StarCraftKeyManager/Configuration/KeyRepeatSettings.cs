@@ -1,4 +1,4 @@
-﻿namespace StarCraftKeyManager.Configuration;
+﻿namespace KeyRepeatTuner.Configuration;
 
 public class KeyRepeatSettings
 {

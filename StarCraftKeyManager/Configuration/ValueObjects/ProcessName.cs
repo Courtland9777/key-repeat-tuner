@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace StarCraftKeyManager.Configuration.ValueObjects;
+namespace KeyRepeatTuner.Configuration.ValueObjects;
 
 public sealed partial class ProcessName
 {

@@ -1,6 +1,6 @@
-﻿using StarCraftKeyManager.SystemAdapters.Interfaces;
+﻿using KeyRepeatTuner.SystemAdapters.Interfaces;
 
-namespace StarCraftKeyManager.SystemAdapters.Wrappers;
+namespace KeyRepeatTuner.SystemAdapters.Wrappers;
 
 public class ManagementEventWatcherFactory : IManagementEventWatcherFactory
 {

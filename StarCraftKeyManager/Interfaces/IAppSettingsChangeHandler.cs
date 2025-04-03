@@ -1,6 +1,6 @@
-﻿using StarCraftKeyManager.Configuration;
+﻿using KeyRepeatTuner.Configuration;
 
-namespace StarCraftKeyManager.Interfaces;
+namespace KeyRepeatTuner.Interfaces;
 
 public interface IAppSettingsChangeHandler
 {

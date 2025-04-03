@@ -1,7 +1,7 @@
 ﻿using System.Management;
 using System.Reflection;
 
-namespace StarCraftKeyManager.Tests.TestUtilities.Fakes;
+namespace KeyRepeatTuner.Tests.TestUtilities.Fakes;
 
 public static class TestEventFactory
 {

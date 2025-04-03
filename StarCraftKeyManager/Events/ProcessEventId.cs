@@ -1,4 +1,4 @@
-﻿namespace StarCraftKeyManager.Events;
+﻿namespace KeyRepeatTuner.Events;
 
 public enum ProcessEventId
 {

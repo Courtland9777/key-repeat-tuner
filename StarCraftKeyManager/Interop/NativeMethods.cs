@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace StarCraftKeyManager.Interop;
+namespace KeyRepeatTuner.Interop;
 
 internal static partial class NativeMethods
 {

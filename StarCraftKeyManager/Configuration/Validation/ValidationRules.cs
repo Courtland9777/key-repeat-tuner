@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace StarCraftKeyManager.Configuration.Validation;
+namespace KeyRepeatTuner.Configuration.Validation;
 
 /// <summary>
 ///     Provides reusable FluentValidation rules for app configuration models.

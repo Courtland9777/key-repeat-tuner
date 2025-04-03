@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace KeyRepeatTuner.Tests.TestUtilities.Stubs;
 
-namespace StarCraftKeyManager.Tests.TestUtilities.Stubs
+internal class PropertyDataCollectionStub
 {
-    internal class PropertyDataCollectionStub
-    {
-    }
 }

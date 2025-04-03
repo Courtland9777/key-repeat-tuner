@@ -1,6 +1,6 @@
 ﻿using System.Management;
 
-namespace StarCraftKeyManager.SystemAdapters.Interfaces;
+namespace KeyRepeatTuner.SystemAdapters.Interfaces;
 
 public interface IManagementEventWatcher : IDisposable
 {

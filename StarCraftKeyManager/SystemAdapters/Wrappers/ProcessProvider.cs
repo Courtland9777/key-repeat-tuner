@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics;
-using StarCraftKeyManager.Configuration.ValueObjects;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
+using KeyRepeatTuner.Configuration.ValueObjects;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
 
-namespace StarCraftKeyManager.SystemAdapters.Wrappers;
+namespace KeyRepeatTuner.SystemAdapters.Wrappers;
 
 internal sealed class ProcessProvider : IProcessProvider
 {

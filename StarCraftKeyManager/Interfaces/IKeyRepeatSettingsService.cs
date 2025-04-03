@@ -1,4 +1,4 @@
-﻿namespace StarCraftKeyManager.Interfaces;
+﻿namespace KeyRepeatTuner.Interfaces;
 
 public interface IKeyRepeatSettingsService
 {

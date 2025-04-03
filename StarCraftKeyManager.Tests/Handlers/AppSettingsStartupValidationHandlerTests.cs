@@ -1,15 +1,15 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.ValueObjects;
+using KeyRepeatTuner.Events;
+using KeyRepeatTuner.Handlers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Configuration.ValueObjects;
-using StarCraftKeyManager.Events;
-using StarCraftKeyManager.Handlers;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Handlers;
+namespace KeyRepeatTuner.Tests.Handlers;
 
 public class AppSettingsStartupValidationHandlerTests
 {

@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
-using StarCraftKeyManager.Interop;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
+using KeyRepeatTuner.Interop;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
 
-namespace StarCraftKeyManager.SystemAdapters.Wrappers;
+namespace KeyRepeatTuner.SystemAdapters.Wrappers;
 
 internal sealed class KeyboardSettingsApplier : IKeyboardSettingsApplier
 {

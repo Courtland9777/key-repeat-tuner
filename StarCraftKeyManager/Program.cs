@@ -1,10 +1,10 @@
 using System.Text.Json;
+using KeyRepeatTuner.Configuration.Converters;
+using KeyRepeatTuner.Events;
+using KeyRepeatTuner.Extensions;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
 using MediatR;
 using Serilog;
-using StarCraftKeyManager.Configuration.Converters;
-using StarCraftKeyManager.Events;
-using StarCraftKeyManager.Extensions;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(new ConfigurationBuilder().AddJsonFile("appsettings.json", true, true).Build())

@@ -1,15 +1,15 @@
 ﻿using FluentValidation;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.Validation;
+using KeyRepeatTuner.Events;
+using KeyRepeatTuner.Health;
+using KeyRepeatTuner.Interfaces;
+using KeyRepeatTuner.Services;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
+using KeyRepeatTuner.SystemAdapters.Wrappers;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Configuration.Validation;
-using StarCraftKeyManager.Events;
-using StarCraftKeyManager.Health;
-using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Services;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
-using StarCraftKeyManager.SystemAdapters.Wrappers;
 
-namespace StarCraftKeyManager.Extensions;
+namespace KeyRepeatTuner.Extensions;
 
 public static class ServiceCollectionExtensions
 {

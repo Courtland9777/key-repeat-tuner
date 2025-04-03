@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace StarCraftKeyManager.Tests.TestUtilities.Extensions;
+namespace KeyRepeatTuner.Tests.TestUtilities.Extensions;
 
 public static class LoggerExtensions
 {

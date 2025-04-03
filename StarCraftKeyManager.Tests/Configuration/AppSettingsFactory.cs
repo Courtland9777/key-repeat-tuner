@@ -1,7 +1,7 @@
-﻿using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Configuration.ValueObjects;
+﻿using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.ValueObjects;
 
-namespace StarCraftKeyManager.Tests.Configuration;
+namespace KeyRepeatTuner.Tests.Configuration;
 
 public static class AppSettingsFactory
 {

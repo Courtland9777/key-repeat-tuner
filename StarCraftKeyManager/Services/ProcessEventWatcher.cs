@@ -1,13 +1,13 @@
 ﻿using System.Management;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.ValueObjects;
+using KeyRepeatTuner.Events;
+using KeyRepeatTuner.Interfaces;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
+using KeyRepeatTuner.SystemAdapters.Wrappers;
 using MediatR;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Configuration.ValueObjects;
-using StarCraftKeyManager.Events;
-using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
-using StarCraftKeyManager.SystemAdapters.Wrappers;
 
-namespace StarCraftKeyManager.Services;
+namespace KeyRepeatTuner.Services;
 
 public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesChangeHandler
 {
