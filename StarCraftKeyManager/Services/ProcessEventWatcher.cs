@@ -38,7 +38,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesCha
 
     public void Start()
     {
-        foreach (var (name, (start, stop)) in _watchers)
+        foreach (var (_, (start, stop)) in _watchers)
             try
             {
                 start.Start();
