@@ -1,13 +1,13 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.ValueObjects;
+using KeyRepeatTuner.Services;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Configuration.ValueObjects;
-using StarCraftKeyManager.Services;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Services;
+namespace KeyRepeatTuner.Tests.Services;
 
 public class KeyRepeatSettingsServiceTests
 {

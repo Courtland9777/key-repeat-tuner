@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Security.Principal;
 
-namespace StarCraftKeyManager.Tests.TestUtilities.Fakes;
+namespace KeyRepeatTuner.Tests.TestUtilities.Fakes;
 
 public class FakeEventRecord : EventRecord
 {

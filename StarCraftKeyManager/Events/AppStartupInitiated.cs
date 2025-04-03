@@ -1,5 +1,5 @@
 ﻿using MediatR;
 
-namespace StarCraftKeyManager.Events;
+namespace KeyRepeatTuner.Events;
 
 public record AppStartupInitiated : INotification;

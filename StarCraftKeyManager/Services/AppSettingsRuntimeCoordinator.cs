@@ -1,9 +1,9 @@
 ﻿using FluentValidation;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Interfaces;
 using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Interfaces;
 
-namespace StarCraftKeyManager.Services;
+namespace KeyRepeatTuner.Services;
 
 internal sealed class AppSettingsRuntimeCoordinator
 {

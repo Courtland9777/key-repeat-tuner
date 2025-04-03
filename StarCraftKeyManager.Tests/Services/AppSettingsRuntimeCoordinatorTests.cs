@@ -1,15 +1,15 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Interfaces;
+using KeyRepeatTuner.Services;
+using KeyRepeatTuner.Tests.Configuration;
+using KeyRepeatTuner.Tests.TestUtilities.Stubs;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.Services;
-using StarCraftKeyManager.Tests.Configuration;
-using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Services;
+namespace KeyRepeatTuner.Tests.Services;
 
 public class AppSettingsRuntimeCoordinatorTests
 {

@@ -5,7 +5,7 @@ using Serilog.Events;
 using Serilog.Sinks.InMemory;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Logging;
+namespace KeyRepeatTuner.Tests.Logging;
 
 public class LoggingTests
 {

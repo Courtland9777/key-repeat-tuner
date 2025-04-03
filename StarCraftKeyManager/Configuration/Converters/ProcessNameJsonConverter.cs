@@ -1,8 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using StarCraftKeyManager.Configuration.ValueObjects;
+using KeyRepeatTuner.Configuration.ValueObjects;
 
-namespace StarCraftKeyManager.Configuration.Converters;
+namespace KeyRepeatTuner.Configuration.Converters;
 
 public class ProcessNameJsonConverter : JsonConverter<ProcessName>
 {

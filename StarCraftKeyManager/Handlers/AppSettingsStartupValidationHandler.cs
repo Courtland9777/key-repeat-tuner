@@ -1,10 +1,10 @@
 ﻿using FluentValidation;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Events;
 using MediatR;
 using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Events;
 
-namespace StarCraftKeyManager.Handlers;
+namespace KeyRepeatTuner.Handlers;
 
 public class AppSettingsStartupValidationHandler : INotificationHandler<AppStartupInitiated>
 {

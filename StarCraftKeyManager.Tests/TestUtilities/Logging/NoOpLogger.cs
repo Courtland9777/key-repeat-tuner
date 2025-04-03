@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace StarCraftKeyManager.Tests.TestUtilities.Logging;
+namespace KeyRepeatTuner.Tests.TestUtilities.Logging;
 
 public sealed class NoOpLogger<T> : ILogger<T>
 {

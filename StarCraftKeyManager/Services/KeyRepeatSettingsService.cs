@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Options;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Interfaces;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
+﻿using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Interfaces;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
+using Microsoft.Extensions.Options;
 
-namespace StarCraftKeyManager.Services;
+namespace KeyRepeatTuner.Services;
 
 internal sealed class KeyRepeatSettingsService : IKeyRepeatSettingsService, IAppSettingsChangeHandler, IDisposable
 {

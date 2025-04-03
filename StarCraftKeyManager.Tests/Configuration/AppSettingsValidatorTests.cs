@@ -1,15 +1,15 @@
 ﻿using System.Text.Json;
+using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.Converters;
+using KeyRepeatTuner.Configuration.Validation;
+using KeyRepeatTuner.Configuration.ValueObjects;
+using KeyRepeatTuner.Tests.TestUtilities.Stubs;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StarCraftKeyManager.Configuration;
-using StarCraftKeyManager.Configuration.Converters;
-using StarCraftKeyManager.Configuration.Validation;
-using StarCraftKeyManager.Configuration.ValueObjects;
-using StarCraftKeyManager.Tests.TestUtilities.Stubs;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace StarCraftKeyManager.Tests.Configuration;
+namespace KeyRepeatTuner.Tests.Configuration;
 
 public class AppSettingsValidatorTests
 {

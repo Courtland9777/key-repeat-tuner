@@ -1,14 +1,14 @@
 ﻿using System.Management;
+using KeyRepeatTuner.Events;
+using KeyRepeatTuner.Services;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
+using KeyRepeatTuner.Tests.TestUtilities.Fakes;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StarCraftKeyManager.Events;
-using StarCraftKeyManager.Services;
-using StarCraftKeyManager.SystemAdapters.Interfaces;
-using StarCraftKeyManager.Tests.TestUtilities.Fakes;
 using Xunit;
 
-namespace StarCraftKeyManager.Tests.Services;
+namespace KeyRepeatTuner.Tests.Services;
 
 public class ProcessEventWatcherTests
 {

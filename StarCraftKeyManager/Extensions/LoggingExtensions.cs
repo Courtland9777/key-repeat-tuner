@@ -1,6 +1,6 @@
 ﻿using Serilog;
 
-namespace StarCraftKeyManager.Extensions;
+namespace KeyRepeatTuner.Extensions;
 
 public static class LoggingExtensions
 {

@@ -1,6 +1,6 @@
-﻿using StarCraftKeyManager.SystemAdapters.Interfaces;
+﻿using KeyRepeatTuner.SystemAdapters.Interfaces;
 
-namespace StarCraftKeyManager.Tests.TestUtilities.Fakes;
+namespace KeyRepeatTuner.Tests.TestUtilities.Fakes;
 
 public class FakeEventArrivedEventArgs : IEventArrivedEventArgs
 {

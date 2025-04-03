@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
-using StarCraftKeyManager.Services;
+﻿using KeyRepeatTuner.Services;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace StarCraftKeyManager.Health;
+namespace KeyRepeatTuner.Health;
 
 /// <summary>
 ///     Health check to verify the WMI process event watchers are active.
