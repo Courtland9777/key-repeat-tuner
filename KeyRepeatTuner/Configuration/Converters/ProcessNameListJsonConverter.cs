@@ -9,9 +9,20 @@ public class ProcessNameListJsonConverter : JsonConverter<List<ProcessName>>
     public override List<ProcessName> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var list = JsonSerializer.Deserialize<List<string>>(ref reader, options);
-        return list?.Select(name => new ProcessName(name)).ToList()
-               ?? throw new JsonException("ProcessNames list is invalid.");
+
+        if (list is null)
+            throw new JsonException("ProcessNames list is invalid.");
+
+        try
+        {
+            return list.Select(name => new ProcessName(name)).ToList();
+        }
+        catch (ArgumentException ex)
+        {
+            throw new JsonException("Invalid ProcessName format", ex);
+        }
     }
+
 
     public override void Write(Utf8JsonWriter writer, List<ProcessName> value, JsonSerializerOptions options)
     {

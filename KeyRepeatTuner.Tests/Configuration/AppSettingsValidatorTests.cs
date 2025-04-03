@@ -49,28 +49,25 @@ public class AppSettingsValidatorTests
     [Fact]
     public void NullProcessName_ShouldFailValidation()
     {
-        var validator = new AppSettingsValidator();
-
+        // Arrange
         var settings = new AppSettings
         {
-            ProcessNames =
-            [
-                new ProcessName("starcraft"),
-                new ProcessName("notepad")
-            ],
+            ProcessNames = [null!],
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+                Default = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 30, RepeatDelay = 300 }
             }
         };
 
+        var validator = new AppSettingsValidator();
+
+        // Act
         var result = validator.Validate(settings);
 
+        // Assert
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors,
-            e => e.PropertyName == "ProcessName" &&
-                 e.ErrorMessage.Contains("must be specified", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("cannot be null"));
     }
 
 
@@ -80,26 +77,24 @@ public class AppSettingsValidatorTests
         // Arrange
         var json = """
                    {
-                       "ProcessName": "invalid name.exe",
+                       "ProcessNames": [ "Invalid Name With Spaces" ],
                        "KeyRepeat": {
-                           "Default": { "RepeatSpeed": 20, "RepeatDelay": 500 },
-                           "FastMode": { "RepeatSpeed": 20, "RepeatDelay": 500 }
+                           "Default": { "RepeatSpeed": 20, "RepeatDelay": 1000 },
+                           "FastMode": { "RepeatSpeed": 31, "RepeatDelay": 500 }
                        }
                    }
                    """;
 
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
-        options.Converters.Add(new ProcessNameJsonConverter());
-
-        // Act + Assert
+        // Act & Assert
         var ex = Assert.Throws<JsonException>(() =>
-            JsonSerializer.Deserialize<AppSettings>(json, options));
+            JsonSerializer.Deserialize<AppSettings>(json, new JsonSerializerOptions
+            {
+                Converters = { new ProcessNameListJsonConverter() }
+            }));
 
-        Assert.Contains("Invalid ProcessName format", ex.Message);
+        Assert.Contains("Invalid process name format", ex.InnerException!.Message);
     }
+
 
     [Fact]
     public void ChangingAppSettings_ShouldTriggerValidation()
@@ -128,8 +123,8 @@ public class AppSettingsValidatorTests
             ],
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+                Default = new KeyRepeatState { RepeatSpeed = 40, RepeatDelay = 2000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 33, RepeatDelay = -1 }
             }
         };
 

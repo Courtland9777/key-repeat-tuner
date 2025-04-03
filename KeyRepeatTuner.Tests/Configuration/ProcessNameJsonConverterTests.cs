@@ -33,30 +33,45 @@ public class ProcessNameJsonConverterTests
     [Fact]
     public void Deserialize_InvalidProcessName_ShouldThrowJsonException()
     {
-        const string json =
-            "{\"ProcessName\":\"invalid name.exe\",\"KeyRepeat\":{\"Default\":{\"RepeatSpeed\":20,\"RepeatDelay\":500},\"FastMode\":{\"RepeatSpeed\":30,\"RepeatDelay\":250}}}";
+        // Arrange
+        var json = "\"invalid name with spaces\"";
 
+        var options = new JsonSerializerOptions
+        {
+            Converters = { new ProcessNameJsonConverter() }
+        };
+
+        // Act
         var ex = Assert.Throws<JsonException>(() =>
-            JsonSerializer.Deserialize<AppSettings>(json, CreateOptions()));
+            JsonSerializer.Deserialize<ProcessName>(json, options));
 
-        Assert.Contains("Invalid ProcessName format", ex.Message);
+        // Assert
+        Assert.NotNull(ex.InnerException);
+        Assert.Contains("Invalid process name format", ex.InnerException!.Message);
     }
+
 
     [Fact]
     public void Serialize_ProcessName_ShouldOutputRawString()
     {
-        var settings = new AppSettings
+        // Arrange
+        var appSettings = new AppSettings
         {
             ProcessNames = [new ProcessName("game123")],
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = new KeyRepeatState { RepeatSpeed = 10, RepeatDelay = 750 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+                Default = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 250 }
             }
         };
 
-        var json = JsonSerializer.Serialize(settings, CreateOptions());
+        var json = JsonSerializer.Serialize(appSettings, new JsonSerializerOptions
+        {
+            Converters = { new ProcessNameListJsonConverter() },
+            WriteIndented = false
+        });
 
-        Assert.Contains("\"ProcessName\":\"game123\"", json);
+        // Assert
+        Assert.Contains("\"ProcessNames\":[\"game123\"]", json);
     }
 }

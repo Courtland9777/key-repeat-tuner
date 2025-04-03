@@ -77,7 +77,7 @@ public class ProcessEventWatcherTests
         const string processName = "dosbox.exe";
 
         _watcher.Configure("dosbox");
-        _watcher.OnStartEventArrived(null!, processName); // pass process name explicitly
+        _watcher.OnStartEventArrived(null!, processName);
 
         _mockMediator.Verify(m =>
             m.Publish(It.Is<ProcessStarted>(x =>
