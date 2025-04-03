@@ -6,8 +6,8 @@ namespace StarCraftKeyManager.Configuration;
 
 public class AppSettings
 {
-    [JsonConverter(typeof(ProcessNameJsonConverter))]
-    public required ProcessName ProcessName { get; set; }
+    [JsonConverter(typeof(ProcessNameListJsonConverter))]
+    public required List<ProcessName> ProcessNames { get; set; }
 
     public required KeyRepeatSettings KeyRepeat { get; set; }
 }

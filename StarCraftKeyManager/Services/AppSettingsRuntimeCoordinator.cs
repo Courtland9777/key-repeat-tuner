@@ -11,6 +11,8 @@ internal sealed class AppSettingsRuntimeCoordinator
     private readonly ILogger<AppSettingsRuntimeCoordinator> _logger;
     private readonly IValidator<AppSettings> _validator;
 
+    private List<string> _lastKnownProcessNames = [];
+
     public AppSettingsRuntimeCoordinator(
         IValidator<AppSettings> validator,
         IEnumerable<IAppSettingsChangeHandler> handlers,
@@ -21,6 +23,7 @@ internal sealed class AppSettingsRuntimeCoordinator
         _handlers = handlers;
         _logger = logger;
 
+        _lastKnownProcessNames = [.. optionsMonitor.CurrentValue.ProcessNames.Select(p => p.Value)];
         optionsMonitor.OnChange(HandleSettingsChange);
     }
 
@@ -37,7 +40,29 @@ internal sealed class AppSettingsRuntimeCoordinator
             return;
         }
 
-        foreach (var handler in _handlers)
+        var newProcessNames = newSettings.ProcessNames.Select(p => p.Value).ToList();
+
+        if (!_lastKnownProcessNames.SequenceEqual(newProcessNames))
+        {
+            var removed = _lastKnownProcessNames.Except(newProcessNames).ToList();
+            var added = newProcessNames.Except(_lastKnownProcessNames).ToList();
+
+            _logger.LogInformation("Process name changes detected. Added: {Added}, Removed: {Removed}", added, removed);
+
+            foreach (var handler in _handlers.OfType<IProcessNamesChangeHandler>())
+                try
+                {
+                    handler.OnProcessNamesChanged(added, removed);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error notifying handler {HandlerType}", handler.GetType().Name);
+                }
+
+            _lastKnownProcessNames = newProcessNames;
+        }
+
+        foreach (var handler in _handlers.Except(_handlers.OfType<IProcessNamesChangeHandler>()))
             try
             {
                 handler.OnSettingsChanged(newSettings);

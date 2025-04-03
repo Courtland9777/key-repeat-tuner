@@ -29,7 +29,11 @@ public class AppSettingsValidatorTests
     {
         var validSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames =
+            [
+                new ProcessName("starcraft"),
+                new ProcessName("notepad")
+            ],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -49,7 +53,11 @@ public class AppSettingsValidatorTests
 
         var settings = new AppSettings
         {
-            ProcessName = null!,
+            ProcessNames =
+            [
+                new ProcessName("starcraft"),
+                new ProcessName("notepad")
+            ],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -99,7 +107,11 @@ public class AppSettingsValidatorTests
         // Arrange
         var initialSettings = new AppSettings
         {
-            ProcessName = new ProcessName("starcraft"),
+            ProcessNames =
+            [
+                new ProcessName("starcraft"),
+                new ProcessName("notepad")
+            ],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
@@ -109,11 +121,15 @@ public class AppSettingsValidatorTests
 
         var updatedSettings = new AppSettings
         {
-            ProcessName = new ProcessName("starcraft"),
+            ProcessNames =
+            [
+                new ProcessName("starcraft"),
+                new ProcessName("notepad")
+            ],
             KeyRepeat = new KeyRepeatSettings
             {
-                Default = new KeyRepeatState { RepeatSpeed = 50, RepeatDelay = 2000 },
-                FastMode = new KeyRepeatState { RepeatSpeed = -1, RepeatDelay = 100 }
+                Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
             }
         };
 
@@ -145,7 +161,7 @@ public class AppSettingsValidatorTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames = [new ProcessName("starcraft"), new ProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = repeatSpeed, RepeatDelay = repeatDelay },
@@ -165,7 +181,11 @@ public class AppSettingsValidatorTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames =
+            [
+                new ProcessName("starcraft"),
+                new ProcessName("notepad")
+            ],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = null!,
@@ -186,7 +206,7 @@ public class AppSettingsValidatorTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames = [new ProcessName("starcraft"), new ProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = null!, // trigger validation error
@@ -207,7 +227,7 @@ public class AppSettingsValidatorTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames = [new ProcessName("starcraft"), new ProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },

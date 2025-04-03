@@ -6,8 +6,8 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
 {
     public AppSettingsValidator()
     {
-        RuleFor(x => x.ProcessName)
-            .NotNull().WithMessage("ProcessName must be specified.");
+        RuleFor(x => x.ProcessNames)
+            .NotEmpty().WithMessage("At least one process name must be specified.");
 
         RuleFor(x => x.KeyRepeat)
             .NotNull().WithMessage("KeyRepeat settings must be provided.")

@@ -74,24 +74,28 @@ public class ProcessEventWatcherTests
     [Fact]
     public void OnStartEventArrived_ShouldPublishProcessStarted()
     {
+        const string processName = "dosbox.exe";
+
         _watcher.Configure("dosbox");
-        _watcher.OnStartEventArrived(null!); // event args ignored in test
+        _watcher.OnStartEventArrived(null!, processName); // pass process name explicitly
 
         _mockMediator.Verify(m =>
             m.Publish(It.Is<ProcessStarted>(x =>
                 x.ProcessId == 9876 &&
-                x.ProcessName == "dosbox.exe"), It.IsAny<CancellationToken>()), Times.Once);
+                x.ProcessName == processName), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public void OnStopEventArrived_ShouldPublishProcessStopped()
     {
+        const string processName = "quake.exe";
+
         _watcher.Configure("quake");
-        _watcher.OnStopEventArrived(null!); // event args ignored in test
+        _watcher.OnStopEventArrived(null!, processName); // pass process name explicitly
 
         _mockMediator.Verify(m =>
             m.Publish(It.Is<ProcessStopped>(x =>
                 x.ProcessId == 9876 &&
-                x.ProcessName == "quake.exe"), It.IsAny<CancellationToken>()), Times.Once);
+                x.ProcessName == processName), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Management;
 using MediatR;
+using StarCraftKeyManager.Configuration;
 using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
@@ -8,15 +9,15 @@ using StarCraftKeyManager.SystemAdapters.Wrappers;
 
 namespace StarCraftKeyManager.Services;
 
-public sealed class ProcessEventWatcher : IProcessEventWatcher
+public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesChangeHandler
 {
     private readonly Func<EventArrivedEventArgs, IEventArrivedEventArgs> _adapterFactory;
     private readonly ILogger<ProcessEventWatcher> _logger;
     private readonly IMediator _mediator;
     private readonly IManagementEventWatcherFactory _watcherFactory;
-    private string _processName = string.Empty;
-    private IManagementEventWatcher? _startWatcher;
-    private IManagementEventWatcher? _stopWatcher;
+
+    private readonly Dictionary<string, (IManagementEventWatcher start, IManagementEventWatcher stop)> _watchers =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public ProcessEventWatcher(
         ILogger<ProcessEventWatcher> logger,
@@ -32,65 +33,31 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 
     public void Configure(string processName)
     {
-        var sanitized = new ProcessName(processName).Value;
-
-        if (string.Equals(_processName, sanitized, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        Log.WatcherReconfigured(_logger, _processName, sanitized, null);
-
-        Stop();
-        _processName = sanitized;
-        Start();
+        Configure([processName]);
     }
 
     public void Start()
     {
-        try
-        {
-            if (_startWatcher != null || _stopWatcher != null) return;
+        foreach (var (name, (start, stop)) in _watchers)
+            try
+            {
+                start.Start();
+                stop.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.StartFailure(_logger, ex);
+            }
 
-            var startQuery =
-                $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{new ProcessName(_processName).WithExe()}'";
-            var stopQuery =
-                $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{new ProcessName(_processName).WithExe()}'";
-
-            _startWatcher = _watcherFactory.Create(startQuery);
-            _stopWatcher = _watcherFactory.Create(stopQuery);
-
-            _startWatcher.EventArrived += (_, e) => OnStartEventArrived(e);
-            _stopWatcher.EventArrived += (_, e) => OnStopEventArrived(e);
-
-            _startWatcher.Start();
-            _stopWatcher.Start();
-
-            Log.WatchersStarted(_logger, null);
-        }
-        catch (Exception ex)
-        {
-            Log.StartFailure(_logger, ex);
-            throw;
-        }
+        Log.WatchersStarted(_logger, null);
     }
 
     public void Stop()
     {
-        try
-        {
-            _startWatcher?.Stop();
-            _startWatcher?.Dispose();
-            _startWatcher = null;
+        foreach (var name in _watchers.Keys.ToList())
+            StopWatcher(name);
 
-            _stopWatcher?.Stop();
-            _stopWatcher?.Dispose();
-            _stopWatcher = null;
-
-            Log.WatchersStopped(_logger, null);
-        }
-        catch (Exception ex)
-        {
-            Log.StopFailure(_logger, ex);
-        }
+        Log.WatchersStopped(_logger, null);
     }
 
     public void Dispose()
@@ -98,41 +65,123 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         Stop();
     }
 
-    internal void OnStartEventArrived(EventArrivedEventArgs e)
+    public void OnProcessNamesChanged(List<string> added, List<string> removed)
     {
-        var args = _adapterFactory(e);
-        var pid = args.GetProcessId();
+        foreach (var name in removed)
+            StopWatcher(name);
 
-        Log.StartEvent(_logger, pid, null);
-        _ = _mediator.Publish(new ProcessStarted(pid, $"{_processName}.exe"));
+        foreach (var name in added)
+            StartWatcher(name);
     }
 
-    internal void OnStopEventArrived(EventArrivedEventArgs e)
+    public void OnSettingsChanged(AppSettings newSettings)
     {
-        var args = _adapterFactory(e);
-        var pid = args.GetProcessId();
+        var newNames = newSettings.ProcessNames
+            .Select(p => p.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
+        var currentNames = _watchers.Keys.ToList();
+
+        var added = newNames.Except(currentNames, StringComparer.OrdinalIgnoreCase).ToList();
+        var removed = currentNames.Except(newNames, StringComparer.OrdinalIgnoreCase).ToList();
+
+        if (added.Count == 0 && removed.Count == 0)
+        {
+            _logger.LogDebug("Process watcher config unchanged. No updates required.");
+            return;
+        }
+
+        _logger.LogInformation("Process watcher config changed. Added: {Added}, Removed: {Removed}", added, removed);
+
+        OnProcessNamesChanged(added, removed);
+    }
+
+
+    private void Configure(List<string> processNames)
+    {
+        OnProcessNamesChanged(
+            [.. processNames.Except(_watchers.Keys, StringComparer.OrdinalIgnoreCase)],
+            [.. _watchers.Keys.Except(processNames, StringComparer.OrdinalIgnoreCase)]
+        );
+    }
+
+    private void StartWatcher(string name)
+    {
+        var processName = new ProcessName(name);
+        var exeName = processName.WithExe();
+
+        try
+        {
+            var startQuery = $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{exeName}'";
+            var stopQuery = $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{exeName}'";
+
+            var startWatcher = _watcherFactory.Create(startQuery);
+            var stopWatcher = _watcherFactory.Create(stopQuery);
+
+            startWatcher.EventArrived += (_, e) => OnStartEventArrived(e, exeName);
+            stopWatcher.EventArrived += (_, e) => OnStopEventArrived(e, exeName);
+
+            startWatcher.Start();
+            stopWatcher.Start();
+
+            _watchers[processName.Value] = (startWatcher, stopWatcher);
+            Log.WatcherReconfigured(_logger, "<none>", processName.Value, null);
+        }
+        catch (Exception ex)
+        {
+            Log.StartFailure(_logger, ex);
+        }
+    }
+
+    private void StopWatcher(string name)
+    {
+        if (!_watchers.TryGetValue(name, out var watchers))
+            return;
+
+        try
+        {
+            watchers.start.Stop();
+            watchers.stop.Stop();
+            watchers.start.Dispose();
+            watchers.stop.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Log.StopFailure(_logger, ex);
+        }
+
+        _watchers.Remove(name);
+    }
+
+    internal void OnStartEventArrived(EventArrivedEventArgs e, string processName)
+    {
+        var pid = _adapterFactory(e).GetProcessId();
+        Log.StartEvent(_logger, pid, null);
+        _ = _mediator.Publish(new ProcessStarted(pid, processName));
+    }
+
+    internal void OnStopEventArrived(EventArrivedEventArgs e, string processName)
+    {
+        var pid = _adapterFactory(e).GetProcessId();
         Log.StopEvent(_logger, pid, null);
-        _ = _mediator.Publish(new ProcessStopped(pid, $"{_processName}.exe"));
+        _ = _mediator.Publish(new ProcessStopped(pid, processName));
     }
 
     public bool IsHealthy()
     {
-        return _startWatcher != null && _stopWatcher != null;
+        return _watchers.All(pair => pair.Value.start != null && pair.Value.stop != null);
     }
+
 
     private static class Log
     {
         public static readonly Action<ILogger, int, Exception?> StartEvent =
-            LoggerMessage.Define<int>(
-                LogLevel.Information,
-                new EventId(2001, nameof(StartEvent)),
+            LoggerMessage.Define<int>(LogLevel.Information, new EventId(2001, nameof(StartEvent)),
                 "WMI Start Event: PID {Pid}");
 
         public static readonly Action<ILogger, int, Exception?> StopEvent =
-            LoggerMessage.Define<int>(
-                LogLevel.Information,
-                new EventId(2002, nameof(StopEvent)),
+            LoggerMessage.Define<int>(LogLevel.Information, new EventId(2002, nameof(StopEvent)),
                 "WMI Stop Event: PID {Pid}");
 
         public static readonly Action<ILogger, string, string, Exception?> WatcherReconfigured =

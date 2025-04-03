@@ -1,4 +1,5 @@
 ﻿using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Configuration.ValueObjects;
 
 namespace StarCraftKeyManager.Tests.Configuration;
 
@@ -8,7 +9,11 @@ public static class AppSettingsFactory
     {
         return new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames =
+            [
+                new ProcessName("starcraft"),
+                new ProcessName("notepad")
+            ],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },

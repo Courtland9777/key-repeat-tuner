@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.Services;
 using StarCraftKeyManager.SystemAdapters.Interfaces;
 using Xunit;
@@ -25,7 +26,7 @@ public class KeyRepeatSettingsServiceTests
     {
         var settings = new AppSettings
         {
-            ProcessName = "sc",
+            ProcessNames = [new ProcessName("sc"), new ProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 10, RepeatDelay = 750 },
@@ -45,7 +46,7 @@ public class KeyRepeatSettingsServiceTests
     {
         var settings = new AppSettings
         {
-            ProcessName = "sc",
+            ProcessNames = ["sc"],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 10, RepeatDelay = 750 },
@@ -65,7 +66,7 @@ public class KeyRepeatSettingsServiceTests
     {
         var initial = new AppSettings
         {
-            ProcessName = "sc",
+            ProcessNames = ["sc"],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 10, RepeatDelay = 750 },
@@ -75,7 +76,7 @@ public class KeyRepeatSettingsServiceTests
 
         var updated = new AppSettings
         {
-            ProcessName = "sc",
+            ProcessNames = ["sc"],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 5, RepeatDelay = 250 },
@@ -99,7 +100,7 @@ public class KeyRepeatSettingsServiceTests
 
         var settings = new AppSettings
         {
-            ProcessName = "sc",
+            ProcessNames = ["sc"],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 1, RepeatDelay = 500 },

@@ -7,12 +7,12 @@ using Xunit;
 
 namespace StarCraftKeyManager.Tests.Integration;
 
-public class ProcessMonitorServiceIntegrationTests
+public class ProcessStateTrackerIntegrationTests
 {
     private readonly Mock<IKeyRepeatSettingsService> _mockKeyRepeatSettingsService;
     private readonly ProcessStateTracker _processStateTracker;
 
-    public ProcessMonitorServiceIntegrationTests()
+    public ProcessStateTrackerIntegrationTests()
     {
         var mockLogger = new Mock<ILogger<ProcessStateTracker>>();
         _mockKeyRepeatSettingsService = new Mock<IKeyRepeatSettingsService>();

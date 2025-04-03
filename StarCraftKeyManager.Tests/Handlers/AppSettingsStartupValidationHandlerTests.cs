@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Handlers;
 using Xunit;
@@ -21,7 +22,7 @@ public class AppSettingsStartupValidationHandlerTests
     {
         var validSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames = [new ProcessName("starcraft"), new ProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 750 },
@@ -46,7 +47,7 @@ public class AppSettingsStartupValidationHandlerTests
     {
         var invalidSettings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames = [new ProcessName("starcraft"), new ProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = null!,

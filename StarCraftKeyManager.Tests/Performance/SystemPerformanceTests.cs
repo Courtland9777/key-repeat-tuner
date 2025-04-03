@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Moq;
 using StarCraftKeyManager.Configuration;
+using StarCraftKeyManager.Configuration.ValueObjects;
 using StarCraftKeyManager.Events;
 using StarCraftKeyManager.Interfaces;
 using StarCraftKeyManager.Services;
@@ -27,7 +28,7 @@ public class SystemPerformanceTests
 
         var settings = new AppSettings
         {
-            ProcessName = "starcraft",
+            ProcessNames = [new ProcessName("starcraft"), new ProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 31, RepeatDelay = 1000 },

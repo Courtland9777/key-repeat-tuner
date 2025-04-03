@@ -16,16 +16,19 @@ public class ProcessNameJsonConverterTests
     }
 
     [Fact]
-    public void Deserialize_ValidProcessName_ShouldReturnExpectedValue()
+    public void Deserialize_ValidProcessNames_ShouldReturnExpectedValue()
     {
         const string json =
-            "{\"ProcessName\":\"validName\",\"KeyRepeat\":{\"Default\":{\"RepeatSpeed\":20,\"RepeatDelay\":500},\"FastMode\":{\"RepeatSpeed\":30,\"RepeatDelay\":250}}}";
+            "{\"ProcessNames\":[\"validName1\",\"validName2\"],\"KeyRepeat\":{\"Default\":{\"RepeatSpeed\":20,\"RepeatDelay\":500},\"FastMode\":{\"RepeatSpeed\":30,\"RepeatDelay\":250}}}";
 
         var result = JsonSerializer.Deserialize<AppSettings>(json, CreateOptions());
 
         Assert.NotNull(result);
-        Assert.Equal("validName", result!.ProcessName.Value);
+        Assert.Collection(result!.ProcessNames,
+            pn => Assert.Equal("validName1", pn.Value),
+            pn => Assert.Equal("validName2", pn.Value));
     }
+
 
     [Fact]
     public void Deserialize_InvalidProcessName_ShouldThrowJsonException()
@@ -44,7 +47,7 @@ public class ProcessNameJsonConverterTests
     {
         var settings = new AppSettings
         {
-            ProcessName = new ProcessName("game123"),
+            ProcessNames = [new ProcessName("game123")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 10, RepeatDelay = 750 },
