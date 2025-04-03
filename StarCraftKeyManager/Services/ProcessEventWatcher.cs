@@ -170,7 +170,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesCha
 
     public bool IsHealthy()
     {
-        return _watchers.All(pair => pair.Value.start != null && pair.Value.stop != null);
+        return _watchers.All(pair => pair.Value is { start: not null, stop: not null });
     }
 
 
