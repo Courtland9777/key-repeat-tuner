@@ -1,5 +1,3 @@
-using System.Text.Json;
-using KeyRepeatTuner.Configuration.Converters;
 using KeyRepeatTuner.Events;
 using KeyRepeatTuner.Extensions;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
@@ -15,16 +13,13 @@ AppDomain.CurrentDomain.UnhandledException += (_, e) =>
     Log.Fatal((Exception)e.ExceptionObject, "Unhandled exception in AppDomain");
 };
 
+
 try
 {
     var builder = Host.CreateApplicationBuilder(args);
     builder.ConfigureSerilog();
-    builder.Services.Configure<JsonSerializerOptions>(options =>
-    {
-        options.Converters.Add(new ProcessNameJsonConverter());
-    });
     builder.SetServiceName();
-    builder.AddAppSettingsJson();
+    builder.AddValidatedAppSettings();
     builder.AddApplicationServices();
 
     using var app = builder.Build();

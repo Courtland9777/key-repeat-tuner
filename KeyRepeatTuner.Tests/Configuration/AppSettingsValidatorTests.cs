@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using KeyRepeatTuner.Configuration;
-using KeyRepeatTuner.Configuration.Converters;
+﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.Validation;
 using KeyRepeatTuner.Configuration.ValueObjects;
 using KeyRepeatTuner.Tests.TestUtilities.Stubs;
@@ -68,31 +66,6 @@ public class AppSettingsValidatorTests
         // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("cannot be null"));
-    }
-
-
-    [Fact]
-    public void InvalidProcessName_ShouldThrowDuringDeserialization()
-    {
-        // Arrange
-        var json = """
-                   {
-                       "ProcessNames": [ "Invalid Name With Spaces" ],
-                       "KeyRepeat": {
-                           "Default": { "RepeatSpeed": 20, "RepeatDelay": 1000 },
-                           "FastMode": { "RepeatSpeed": 31, "RepeatDelay": 500 }
-                       }
-                   }
-                   """;
-
-        // Act & Assert
-        var ex = Assert.Throws<JsonException>(() =>
-            JsonSerializer.Deserialize<AppSettings>(json, new JsonSerializerOptions
-            {
-                Converters = { new ProcessNameListJsonConverter() }
-            }));
-
-        Assert.Contains("Invalid process name format", ex.InnerException!.Message);
     }
 
 
