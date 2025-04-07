@@ -9,7 +9,6 @@ public sealed class ProcessStateTracker : INotificationHandler<ProcessStarted>, 
     private readonly HashSet<int> _activeProcesses = [];
     private readonly IKeyRepeatSettingsService _keyRepeatSettingsService;
     private readonly ILogger<ProcessStateTracker> _logger;
-    private bool _lastKnownRunningState;
 
     public ProcessStateTracker(
         ILogger<ProcessStateTracker> logger,
@@ -19,31 +18,34 @@ public sealed class ProcessStateTracker : INotificationHandler<ProcessStarted>, 
         _keyRepeatSettingsService = keyRepeatSettingsService;
     }
 
+    private bool IsRunning => _activeProcesses.Count > 0;
+
     public Task Handle(ProcessStarted notification, CancellationToken cancellationToken)
     {
+        if (IsRunning)
+        {
+            _activeProcesses.Add(notification.ProcessId);
+            Log.ProcessStarted(_logger, notification.ProcessId, notification.ProcessName, null);
+            return Task.CompletedTask;
+        }
+
         _activeProcesses.Add(notification.ProcessId);
         Log.ProcessStarted(_logger, notification.ProcessId, notification.ProcessName, null);
-        return OnRunningStateChangedIfNeeded();
+        _keyRepeatSettingsService.UpdateRunningState(IsRunning);
+        return Task.CompletedTask;
     }
 
     public Task Handle(ProcessStopped notification, CancellationToken cancellationToken)
     {
         _activeProcesses.Remove(notification.ProcessId);
         Log.ProcessStopped(_logger, notification.ProcessId, notification.ProcessName, null);
-        return OnRunningStateChangedIfNeeded();
-    }
-
-    private Task OnRunningStateChangedIfNeeded()
-    {
-        var current = _activeProcesses.Count > 0;
-
-        if (_lastKnownRunningState == current)
+        if (IsRunning)
+        {
+            _logger.LogInformation("Still in FastMode. Other processes still active.");
             return Task.CompletedTask;
+        }
 
-        _lastKnownRunningState = current;
-        Log.RunningStateChanged(_logger, current, null);
-        _keyRepeatSettingsService.UpdateRunningState(current);
-
+        _keyRepeatSettingsService.UpdateRunningState(IsRunning);
         return Task.CompletedTask;
     }
 

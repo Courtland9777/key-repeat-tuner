@@ -8,6 +8,7 @@ using KeyRepeatTuner.Interfaces;
 using KeyRepeatTuner.Services;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.SystemAdapters.Wrappers;
+using MediatR;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
@@ -45,7 +46,6 @@ public static class ServiceCollectionExtensions
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddSingleton<IValidator<AppSettings>, AppSettingsValidator>();
-        builder.Services.AddSingleton<AppSettingsChangeValidator>();
         builder.Services.AddSingleton<IAppSettingsChangeHandler, KeyRepeatSettingsService>();
 
         builder.Services.AddMediatR(cfg =>
@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
         services
             .AddSingleton<ProcessEventWatcher>()
             .AddSingleton<IProcessEventWatcher>(sp => sp.GetRequiredService<ProcessEventWatcher>())
+            .AddSingleton<INotificationHandler<AppStartupInitiated>, StartupWatcherTrigger>()
             .AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>()
             .AddSingleton<ProcessStateTracker>()
             .AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>()

@@ -9,7 +9,7 @@ using MediatR;
 
 namespace KeyRepeatTuner.Services;
 
-public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesChangeHandler
+public sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly Func<EventArrivedEventArgs, IEventArrivedEventArgs> _adapterFactory;
     private readonly ILogger<ProcessEventWatcher> _logger;
@@ -65,15 +65,6 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesCha
         Stop();
     }
 
-    public void OnProcessNamesChanged(List<string> added, List<string> removed)
-    {
-        foreach (var name in removed)
-            StopWatcher(name);
-
-        foreach (var name in added)
-            StartWatcher(name);
-    }
-
     public void OnSettingsChanged(AppSettings newSettings)
     {
         var newNames = newSettings.ProcessNames
@@ -95,6 +86,15 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesCha
         _logger.LogInformation("Process watcher config changed. Added: {Added}, Removed: {Removed}", added, removed);
 
         OnProcessNamesChanged(added, removed);
+    }
+
+    public void OnProcessNamesChanged(List<string> added, List<string> removed)
+    {
+        foreach (var name in removed)
+            StopWatcher(name);
+
+        foreach (var name in added)
+            StartWatcher(name);
     }
 
 
@@ -126,7 +126,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesCha
             stopWatcher.Start();
 
             _watchers[processName.Value] = (startWatcher, stopWatcher);
-            Log.WatcherReconfigured(_logger, "<none>", processName.Value, null);
+            _logger.LogInformation("WMI process watcher is now watching → {processName.Value}", processName.Value);
         }
         catch (Exception ex)
         {
@@ -183,12 +183,6 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher, IProcessNamesCha
         public static readonly Action<ILogger, int, Exception?> StopEvent =
             LoggerMessage.Define<int>(LogLevel.Information, new EventId(2002, nameof(StopEvent)),
                 "WMI Stop Event: PID {Pid}");
-
-        public static readonly Action<ILogger, string, string, Exception?> WatcherReconfigured =
-            LoggerMessage.Define<string, string>(
-                LogLevel.Information,
-                new EventId(2003, nameof(WatcherReconfigured)),
-                "Reconfiguring WMI process watcher for {OldName} → {NewName}");
 
         public static readonly Action<ILogger, Exception?> StartFailure =
             LoggerMessage.Define(
