@@ -38,27 +38,14 @@ internal sealed class KeyRepeatSettingsService : IKeyRepeatSettingsService, IApp
             var mode = isRunning ? "FastMode" : "Default";
             var config = isRunning ? _settings.FastMode : _settings.Default;
 
-            Log.ApplySettings(_logger, mode, config.RepeatSpeed, config.RepeatDelay, null);
+            _logger.LogInformation("Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}",
+                mode, config.RepeatSpeed, config.RepeatDelay);
+
             _keyboardSettingsApplier.ApplyRepeatSettings(config.RepeatSpeed, config.RepeatDelay);
         }
         catch (Exception ex)
         {
-            Log.ApplyFailed(_logger, ex);
+            _logger.LogError(ex, "Failed to apply key repeat settings.");
         }
-    }
-
-    private static class Log
-    {
-        public static readonly Action<ILogger, string, int, int, Exception?> ApplySettings =
-            LoggerMessage.Define<string, int, int>(
-                LogLevel.Information,
-                new EventId(1000, nameof(ApplySettings)),
-                "Applying key repeat settings: Mode={Mode}, Speed={Speed}, Delay={Delay}");
-
-        public static readonly Action<ILogger, Exception?> ApplyFailed =
-            LoggerMessage.Define(
-                LogLevel.Error,
-                new EventId(1003, nameof(ApplyFailed)),
-                "Failed to apply key repeat settings.");
     }
 }

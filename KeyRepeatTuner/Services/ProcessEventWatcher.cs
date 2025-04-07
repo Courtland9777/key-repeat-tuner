@@ -46,18 +46,17 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
             }
             catch (Exception ex)
             {
-                Log.StartFailure(_logger, ex);
+                _logger.LogError(ex, "Failed to start WMI process watchers for process.");
             }
 
-        Log.WatchersStarted(_logger, null);
+        _logger.LogInformation("WMI process watchers started.");
     }
 
     public void Stop()
     {
-        foreach (var name in _watchers.Keys.ToList())
-            StopWatcher(name);
+        foreach (var name in _watchers.Keys.ToList()) StopWatcher(name);
 
-        Log.WatchersStopped(_logger, null);
+        _logger.LogInformation("WMI process watchers stopped.");
     }
 
     public void Dispose()
@@ -88,7 +87,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         OnProcessNamesChanged(added, removed);
     }
 
-    public void OnProcessNamesChanged(List<string> added, List<string> removed)
+    private void OnProcessNamesChanged(List<string> added, List<string> removed)
     {
         foreach (var name in removed)
             StopWatcher(name);
@@ -96,7 +95,6 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         foreach (var name in added)
             StartWatcher(name);
     }
-
 
     private void Configure(List<string> processNames)
     {
@@ -126,11 +124,12 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
             stopWatcher.Start();
 
             _watchers[processName.Value] = (startWatcher, stopWatcher);
-            _logger.LogInformation("WMI process watcher is now watching → {processName.Value}", processName.Value);
+
+            _logger.LogInformation("WMI process watcher is now watching → {ProcessName}", processName.Value);
         }
         catch (Exception ex)
         {
-            Log.StartFailure(_logger, ex);
+            _logger.LogError(ex, "Failed to start WMI process watchers for process.");
         }
     }
 
@@ -148,7 +147,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         }
         catch (Exception ex)
         {
-            Log.StopFailure(_logger, ex);
+            _logger.LogWarning(ex, "Failed to stop/reconfigure watchers.");
         }
 
         _watchers.Remove(name);
@@ -157,55 +156,19 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
     internal void OnStartEventArrived(EventArrivedEventArgs e, string processName)
     {
         var pid = _adapterFactory(e).GetProcessId();
-        Log.StartEvent(_logger, pid, null);
+        _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
         _ = _mediator.Publish(new ProcessStarted(pid, processName));
     }
 
     internal void OnStopEventArrived(EventArrivedEventArgs e, string processName)
     {
         var pid = _adapterFactory(e).GetProcessId();
-        Log.StopEvent(_logger, pid, null);
+        _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
         _ = _mediator.Publish(new ProcessStopped(pid, processName));
     }
 
     public bool IsHealthy()
     {
         return _watchers.All(pair => pair.Value is { start: not null, stop: not null });
-    }
-
-
-    private static class Log
-    {
-        public static readonly Action<ILogger, int, Exception?> StartEvent =
-            LoggerMessage.Define<int>(LogLevel.Information, new EventId(2001, nameof(StartEvent)),
-                "WMI Start Event: PID {Pid}");
-
-        public static readonly Action<ILogger, int, Exception?> StopEvent =
-            LoggerMessage.Define<int>(LogLevel.Information, new EventId(2002, nameof(StopEvent)),
-                "WMI Stop Event: PID {Pid}");
-
-        public static readonly Action<ILogger, Exception?> StartFailure =
-            LoggerMessage.Define(
-                LogLevel.Error,
-                new EventId(2004, nameof(StartFailure)),
-                "Failed to start WMI process watchers for process.");
-
-        public static readonly Action<ILogger, Exception?> StopFailure =
-            LoggerMessage.Define(
-                LogLevel.Warning,
-                new EventId(2005, nameof(StopFailure)),
-                "Failed to stop/reconfigure watchers.");
-
-        public static readonly Action<ILogger, Exception?> WatchersStarted =
-            LoggerMessage.Define(
-                LogLevel.Information,
-                new EventId(2006, nameof(WatchersStarted)),
-                "WMI process watchers started.");
-
-        public static readonly Action<ILogger, Exception?> WatchersStopped =
-            LoggerMessage.Define(
-                LogLevel.Information,
-                new EventId(2007, nameof(WatchersStopped)),
-                "WMI process watchers stopped.");
     }
 }

@@ -18,28 +18,35 @@ public static class ServiceCollectionExtensions
 {
     public static void AddValidatedAppSettings(this IHostApplicationBuilder builder)
     {
+        builder.Services
+            .AddOptions<AppSettingsDto>()
+            .Bind(builder.Configuration.GetSection("AppSettings"))
+            .ValidateOnStart();
+
         builder.Services.AddSingleton<IOptionsMonitor<AppSettings>>(sp =>
         {
-            var config = sp.GetRequiredService<IConfiguration>();
+            var dtoMonitor = sp.GetRequiredService<IOptionsMonitor<AppSettingsDto>>();
             var validator = sp.GetRequiredService<IValidator<AppSettings>>();
 
-            var dto = config.GetSection("AppSettings").Get<AppSettingsDto>()
-                      ?? throw new InvalidOperationException("AppSettings section missing");
+            return new TransformingOptionsMonitor<AppSettingsDto, AppSettings>(
+                dtoMonitor,
+                dto =>
+                {
+                    var mapped = new AppSettings
+                    {
+                        ProcessNames = dto.ProcessNames?.Select(name => new ProcessName(name)).ToList()
+                                       ?? throw new InvalidOperationException("ProcessNames must be set"),
+                        KeyRepeat = dto.KeyRepeat ?? throw new InvalidOperationException("KeyRepeat settings missing")
+                    };
 
-            var instance = new AppSettings
-            {
-                ProcessNames = dto.ProcessNames?.Select(name => new ProcessName(name)).ToList()
-                               ?? throw new InvalidOperationException("ProcessNames must be set"),
-                KeyRepeat = dto.KeyRepeat ?? throw new InvalidOperationException("KeyRepeat settings missing")
-            };
+                    var result = validator.Validate(mapped);
+                    if (!result.IsValid)
+                        throw new OptionsValidationException(nameof(AppSettings), typeof(AppSettings),
+                            result.Errors.Select(e => e.ErrorMessage));
 
-            var validation = validator.Validate(instance);
-            if (validation.IsValid) return new SimpleOptionsMonitor<AppSettings>(instance);
-            var errors = validation.Errors.Select(e => $"{e.PropertyName} - {e.ErrorMessage}");
-            throw new OptionsValidationException(nameof(AppSettings), typeof(AppSettings), errors);
+                    return mapped;
+                });
         });
-
-        builder.Services.Configure<AppSettingsDto>(builder.Configuration.GetSection("AppSettings"));
     }
 
 
@@ -77,9 +84,4 @@ public static class ServiceCollectionExtensions
             .AddHealthChecks()
             .AddCheck<ProcessWatcherHealthCheck>("process_watcher", tags: ["ready", "live"]);
     }
-
-    private record AppSettingsDto(
-        List<string>? ProcessNames,
-        KeyRepeatSettings? KeyRepeat
-    );
 }
