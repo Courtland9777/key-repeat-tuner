@@ -5,6 +5,6 @@ public static class HostBuilderExtensions
     public static void SetServiceName(this IHostApplicationBuilder builder)
     {
         builder.Services.Configure<WindowsServiceLifetimeOptions>(options =>
-            options.ServiceName = "StarCraft Key Manager");
+            options.ServiceName = "Key Repeat Tuner");
     }
 }
