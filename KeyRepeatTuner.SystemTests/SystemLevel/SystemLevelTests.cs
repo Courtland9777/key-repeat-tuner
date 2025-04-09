@@ -4,7 +4,7 @@ using Microsoft.Win32;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace KeyRepeatTuner.Tests.SystemLevel;
+namespace KeyRepeatTuner.SystemTests.SystemLevel;
 
 public class SystemLevelTests : IDisposable
 {
