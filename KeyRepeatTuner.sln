@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -14,36 +13,22 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyRepeatTuner.SystemTests"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
-		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Debug|x64.Build.0 = Debug|Any CPU
-		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Debug|x64.ActiveCfg = Debug|x64
+		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Debug|x64.Build.0 = Debug|x64
 		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Release|x64.ActiveCfg = Release|x64
 		{A42076F1-ACF8-48E3-8B50-6D2F10178140}.Release|x64.Build.0 = Release|x64
-		{A48680A8-B92E-400A-B481-84FA5FA08141}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A48680A8-B92E-400A-B481-84FA5FA08141}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A48680A8-B92E-400A-B481-84FA5FA08141}.Debug|x64.ActiveCfg = Debug|x64
 		{A48680A8-B92E-400A-B481-84FA5FA08141}.Debug|x64.Build.0 = Debug|x64
-		{A48680A8-B92E-400A-B481-84FA5FA08141}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A48680A8-B92E-400A-B481-84FA5FA08141}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A48680A8-B92E-400A-B481-84FA5FA08141}.Release|x64.ActiveCfg = Release|x64
 		{A48680A8-B92E-400A-B481-84FA5FA08141}.Release|x64.Build.0 = Release|x64
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Debug|x64.Build.0 = Debug|Any CPU
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Release|x64.ActiveCfg = Release|Any CPU
-		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Release|x64.Build.0 = Release|Any CPU
+		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Debug|x64.ActiveCfg = Debug|x64
+		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Debug|x64.Build.0 = Debug|x64
+		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Release|x64.ActiveCfg = Release|x64
+		{BC0B7D02-6AE0-4BF8-8426-1225E59E0353}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
