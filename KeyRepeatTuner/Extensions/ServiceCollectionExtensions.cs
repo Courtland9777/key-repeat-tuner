@@ -69,6 +69,7 @@ public static class ServiceCollectionExtensions
     private static void AddInfrastructureServices(this IServiceCollection services)
     {
         services
+            .AddSingleton<IKeyboardRegistryReader, KeyboardRegistryReader>()
             .AddSingleton<ProcessEventWatcher>()
             .AddSingleton<IProcessEventWatcher>(sp => sp.GetRequiredService<ProcessEventWatcher>())
             .AddSingleton<INotificationHandler<AppStartupInitiated>, StartupWatcherTrigger>()

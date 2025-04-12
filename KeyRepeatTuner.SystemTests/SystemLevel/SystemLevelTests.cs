@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Security.Principal;
+using KeyRepeatTuner.SystemAdapters.Interfaces;
+using KeyRepeatTuner.SystemAdapters.Wrappers;
 using Microsoft.Win32;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,17 +15,19 @@ public class SystemLevelTests : IDisposable
 
     private readonly string? _originalDelay;
     private readonly string? _originalSpeed;
+    private readonly IKeyboardRegistryReader _registryReader;
     private readonly ITestOutputHelper _testOutputHelper;
     private Process? _appProcess;
 
     public SystemLevelTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
+        _registryReader = new KeyboardRegistryReader();
 
         Assert.True(IsAdministrator(), "Tests must run with administrator privileges.");
 
-        _originalSpeed = GetKeyboardSpeed();
-        _originalDelay = GetKeyboardDelay();
+        _originalSpeed = _registryReader.GetRepeatSpeed();
+        _originalDelay = _registryReader.GetRepeatDelay();
     }
 
     public void Dispose()
@@ -45,6 +49,7 @@ public class SystemLevelTests : IDisposable
 
         if (_originalDelay is not null)
             Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "KeyboardDelay", _originalDelay);
+
         GC.SuppressFinalize(this);
     }
 
@@ -54,15 +59,15 @@ public class SystemLevelTests : IDisposable
         StartKeyRepeatApp();
         await Task.Delay(3000);
 
-        var originalSpeed = GetKeyboardSpeed();
-        var originalDelay = GetKeyboardDelay();
+        var originalSpeed = _registryReader.GetRepeatSpeed();
+        var originalDelay = _registryReader.GetRepeatDelay();
         _testOutputHelper.WriteLine($"Original Speed={originalSpeed}, Delay={originalDelay}");
 
         var cmd = StartWatchedCmdProcess();
         await Task.Delay(3000);
 
-        var newSpeed = GetKeyboardSpeed();
-        var newDelay = GetKeyboardDelay();
+        var newSpeed = _registryReader.GetRepeatSpeed();
+        var newDelay = _registryReader.GetRepeatDelay();
         _testOutputHelper.WriteLine($"New Speed={newSpeed}, Delay={newDelay}");
 
         Assert.False(string.IsNullOrWhiteSpace(newSpeed) && string.IsNullOrWhiteSpace(newDelay),
@@ -71,7 +76,7 @@ public class SystemLevelTests : IDisposable
         Assert.Equal("31", newSpeed); // FastMode.Speed
         Assert.Equal("2", newDelay); // 500ms = code 2
 
-        await cmd.WaitForExitAsync(); // Let the dummy process terminate naturally
+        await cmd.WaitForExitAsync();
     }
 
     [Fact]
@@ -84,8 +89,8 @@ public class SystemLevelTests : IDisposable
         await cmd.WaitForExitAsync();
         await Task.Delay(3000);
 
-        var speed = GetKeyboardSpeed();
-        var delay = GetKeyboardDelay();
+        var speed = _registryReader.GetRepeatSpeed();
+        var delay = _registryReader.GetRepeatDelay();
 
         _testOutputHelper.WriteLine($"Final Speed={speed}, Delay={delay}");
 
@@ -102,34 +107,31 @@ public class SystemLevelTests : IDisposable
         StartKeyRepeatApp();
         await Task.Delay(3000);
 
-        _testOutputHelper.WriteLine($"Start → Speed={GetKeyboardSpeed()}, Delay={GetKeyboardDelay()}");
+        _testOutputHelper.WriteLine(
+            $"Start → Speed={_registryReader.GetRepeatSpeed()}, Delay={_registryReader.GetRepeatDelay()}");
 
         var firstCmdProcess = StartWatchedCmdProcess();
         await Task.Delay(3000);
         var secondCmdProcess = StartWatchedCmdProcess();
-
-
         await Task.Delay(3000);
 
-        var speedDuringFastMode = GetKeyboardSpeed();
-        var delayDuringFastMode = GetKeyboardDelay();
+        var speedDuringFastMode = _registryReader.GetRepeatSpeed();
+        var delayDuringFastMode = _registryReader.GetRepeatDelay();
 
         _testOutputHelper.WriteLine($"FastMode → Speed={speedDuringFastMode}, Delay={delayDuringFastMode}");
 
         await firstCmdProcess.WaitForExitAsync();
         await secondCmdProcess.WaitForExitAsync();
-
         await Task.Delay(3000);
 
-        var speedAfterExit = GetKeyboardSpeed();
-        var delayAfterExit = GetKeyboardDelay();
+        var speedAfterExit = _registryReader.GetRepeatSpeed();
+        var delayAfterExit = _registryReader.GetRepeatDelay();
 
         _testOutputHelper.WriteLine($"PostExit → Speed={speedAfterExit}, Delay={delayAfterExit}");
 
         Assert.NotEqual(speedAfterExit, speedDuringFastMode);
         Assert.NotEqual(delayAfterExit, delayDuringFastMode);
     }
-
 
     private void StartKeyRepeatApp(IEnumerable<KeyValuePair<string, string>>? configOverrides = null)
     {
@@ -140,18 +142,16 @@ public class SystemLevelTests : IDisposable
             WorkingDirectory = Path.GetDirectoryName(GetAppPath())!
         };
 
-        // Inject configuration overrides as environment variables
         if (configOverrides is not null)
             foreach (var kv in configOverrides)
             {
-                var envKey = kv.Key.Replace(":", "__"); // .NET config uses double underscores for nested keys
+                var envKey = kv.Key.Replace(":", "__");
                 startInfo.Environment[envKey] = kv.Value;
             }
 
         _appProcess = Process.Start(startInfo)!;
         Assert.NotNull(_appProcess);
     }
-
 
     private static Process StartWatchedCmdProcess()
     {
@@ -162,16 +162,6 @@ public class SystemLevelTests : IDisposable
             CreateNoWindow = true,
             UseShellExecute = false
         })!;
-    }
-
-    private static string? GetKeyboardSpeed()
-    {
-        return Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "KeyboardSpeed", null)?.ToString();
-    }
-
-    private static string? GetKeyboardDelay()
-    {
-        return Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "KeyboardDelay", null)?.ToString();
     }
 
     private static string GetAppPath()
