@@ -53,7 +53,10 @@ public static class ServiceCollectionExtensions
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddSingleton<IValidator<AppSettings>, AppSettingsValidator>();
-        builder.Services.AddSingleton<IAppSettingsChangeHandler, KeyRepeatSettingsService>();
+
+        builder.Services.AddSingleton<IKeyRepeatSettingsService, KeyRepeatModeCoordinator>();
+        builder.Services.AddSingleton<IAppSettingsChangeHandler>(sp =>
+            (IAppSettingsChangeHandler)sp.GetRequiredService<IKeyRepeatSettingsService>());
 
         builder.Services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
@@ -61,6 +64,7 @@ public static class ServiceCollectionExtensions
         builder.Services.AddInfrastructureServices();
         builder.Services.AddMonitoringServices();
     }
+
 
     private static void AddInfrastructureServices(this IServiceCollection services)
     {
@@ -71,7 +75,10 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>()
             .AddSingleton<ProcessStateTracker>()
             .AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>()
-            .AddSingleton<IKeyRepeatSettingsService, KeyRepeatSettingsService>()
+            .AddSingleton<IKeyRepeatApplier, KeyRepeatApplier>() // ⬅️ new concrete class
+            .AddSingleton<IKeyRepeatSettingsService, KeyRepeatModeCoordinator>() // ⬅️ new coordinator
+            .AddSingleton<IAppSettingsChangeHandler>(sp =>
+                (IAppSettingsChangeHandler)sp.GetRequiredService<IKeyRepeatSettingsService>())
             .AddSingleton<IProcessProvider, ProcessProvider>()
             .AddSingleton<IUserContext, UserContext>();
     }
