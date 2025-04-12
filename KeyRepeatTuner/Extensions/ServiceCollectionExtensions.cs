@@ -3,13 +3,11 @@ using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.Validation;
 using KeyRepeatTuner.Configuration.ValueObjects;
 using KeyRepeatTuner.Events;
-using KeyRepeatTuner.Health;
 using KeyRepeatTuner.Interfaces;
 using KeyRepeatTuner.Services;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.SystemAdapters.Wrappers;
 using MediatR;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace KeyRepeatTuner.Extensions;
@@ -62,7 +60,6 @@ public static class ServiceCollectionExtensions
             cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
 
         builder.Services.AddInfrastructureServices();
-        builder.Services.AddMonitoringServices();
     }
 
 
@@ -82,14 +79,5 @@ public static class ServiceCollectionExtensions
                 (IAppSettingsChangeHandler)sp.GetRequiredService<IKeyRepeatSettingsService>())
             .AddSingleton<IProcessProvider, ProcessProvider>()
             .AddSingleton<IUserContext, UserContext>();
-    }
-
-
-    private static void AddMonitoringServices(this IServiceCollection services)
-    {
-        services
-            .AddSingleton<IHealthCheck, ProcessWatcherHealthCheck>()
-            .AddHealthChecks()
-            .AddCheck<ProcessWatcherHealthCheck>("process_watcher", tags: ["ready", "live"]);
     }
 }
