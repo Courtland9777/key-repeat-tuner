@@ -1,11 +1,9 @@
 ﻿using System.Management;
 using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.ValueObjects;
-using KeyRepeatTuner.Events;
 using KeyRepeatTuner.Interfaces;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.SystemAdapters.Wrappers;
-using MediatR;
 
 namespace KeyRepeatTuner.Services;
 
@@ -13,7 +11,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly Func<EventArrivedEventArgs, IEventArrivedEventArgs> _adapterFactory;
     private readonly ILogger<ProcessEventWatcher> _logger;
-    private readonly IMediator _mediator;
+    private readonly IProcessEventRouter _router;
     private readonly IManagementEventWatcherFactory _watcherFactory;
 
     private readonly Dictionary<string, (IManagementEventWatcher start, IManagementEventWatcher stop)> _watchers =
@@ -22,12 +20,12 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
     public ProcessEventWatcher(
         ILogger<ProcessEventWatcher> logger,
         IManagementEventWatcherFactory watcherFactory,
-        IMediator mediator,
+        IProcessEventRouter router,
         Func<EventArrivedEventArgs, IEventArrivedEventArgs>? adapterFactory = null)
     {
         _logger = logger;
         _watcherFactory = watcherFactory;
-        _mediator = mediator;
+        _router = router;
         _adapterFactory = adapterFactory ?? (e => new EventArrivedEventArgsAdapter(e));
     }
 
@@ -157,18 +155,13 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
     {
         var pid = _adapterFactory(e).GetProcessId();
         _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
-        _ = _mediator.Publish(new ProcessStarted(pid, processName));
+        _router.OnProcessStarted(pid, processName);
     }
 
     internal void OnStopEventArrived(EventArrivedEventArgs e, string processName)
     {
         var pid = _adapterFactory(e).GetProcessId();
         _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
-        _ = _mediator.Publish(new ProcessStopped(pid, processName));
-    }
-
-    public bool IsHealthy()
-    {
-        return _watchers.All(pair => pair.Value is { start: not null, stop: not null });
+        _router.OnProcessStopped(pid, processName);
     }
 }

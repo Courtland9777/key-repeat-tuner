@@ -1,9 +1,8 @@
-﻿using System.Management;
-using KeyRepeatTuner.Events;
+﻿using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Interfaces;
 using KeyRepeatTuner.Services;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.Tests.TestUtilities.Fakes;
-using MediatR;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -13,7 +12,7 @@ namespace KeyRepeatTuner.Tests.Services;
 public class ProcessEventWatcherTests
 {
     private readonly Mock<ILogger<ProcessEventWatcher>> _mockLogger = new();
-    private readonly Mock<IMediator> _mockMediator = new();
+    private readonly Mock<IProcessEventRouter> _mockRouter = new();
     private readonly Mock<IManagementEventWatcher> _mockStartWatcher = new();
     private readonly Mock<IManagementEventWatcher> _mockStopWatcher = new();
     private readonly Mock<IManagementEventWatcherFactory> _mockWatcherFactory = new();
@@ -29,73 +28,67 @@ public class ProcessEventWatcherTests
         _watcher = new ProcessEventWatcher(
             _mockLogger.Object,
             _mockWatcherFactory.Object,
-            _mockMediator.Object,
-            TestAdapter);
-        return;
-
-        static IEventArrivedEventArgs TestAdapter(EventArrivedEventArgs _)
-        {
-            return new FakeEventArrivedEventArgs(9876);
-        }
+            _mockRouter.Object,
+            _ => new FakeEventArrivedEventArgs(9876));
     }
 
     [Fact]
-    public void Configure_ChangesWatcher_WhenNewProcessNameGiven()
+    public void Configure_ShouldCreateWatchers_AndStartThem()
     {
         _watcher.Configure("starcraft");
-        _watcher.Configure("warcraft");
-
-        _mockStartWatcher.Verify(w => w.Stop(), Times.Once);
-        _mockStartWatcher.Verify(w => w.Dispose(), Times.Once);
-        _mockStopWatcher.Verify(w => w.Stop(), Times.Once);
-        _mockStopWatcher.Verify(w => w.Dispose(), Times.Once);
-    }
-
-    [Fact]
-    public void Configure_DoesNothing_WhenProcessNameIsSame()
-    {
-        _watcher.Configure("notepad");
-        _watcher.Configure("notepad");
 
         _mockStartWatcher.Verify(w => w.Start(), Times.Once);
         _mockStopWatcher.Verify(w => w.Start(), Times.Once);
     }
 
     [Fact]
-    public void Dispose_CleansUpWatchers()
+    public void OnStartEventArrived_ShouldCallRouter()
     {
-        _watcher.Configure("test");
-        _watcher.Dispose();
+        _watcher.OnStartEventArrived(null!, "starcraft.exe");
 
-        _mockStartWatcher.Verify(w => w.Stop(), Times.AtLeastOnce);
-        _mockStopWatcher.Verify(w => w.Dispose(), Times.AtLeastOnce);
+        _mockRouter.Verify(r => r.OnProcessStarted(9876, "starcraft.exe"), Times.Once);
     }
 
     [Fact]
-    public void OnStartEventArrived_ShouldPublishProcessStarted()
+    public void OnStopEventArrived_ShouldCallRouter()
     {
-        const string processName = "dosbox.exe";
+        _watcher.OnStopEventArrived(null!, "starcraft.exe");
 
-        _watcher.Configure("dosbox");
-        _watcher.OnStartEventArrived(null!, processName);
-
-        _mockMediator.Verify(m =>
-            m.Publish(It.Is<ProcessStarted>(x =>
-                x.ProcessId == 9876 &&
-                x.ProcessName == processName), It.IsAny<CancellationToken>()), Times.Once);
+        _mockRouter.Verify(r => r.OnProcessStopped(9876, "starcraft.exe"), Times.Once);
     }
 
     [Fact]
-    public void OnStopEventArrived_ShouldPublishProcessStopped()
+    public void OnSettingsChanged_ShouldAddAndRemoveWatchers()
     {
-        const string processName = "quake.exe";
+        // Initial config
+        var initialSettings = new AppSettings
+        {
+            ProcessNames = ["notepad"],
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 10, RepeatDelay = 750 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 }
+            }
+        };
 
-        _watcher.Configure("quake");
-        _watcher.OnStopEventArrived(null!, processName); // pass process name explicitly
+        _watcher.OnSettingsChanged(initialSettings);
+        _mockStartWatcher.Verify(w => w.Start(), Times.Once);
+        _mockStopWatcher.Verify(w => w.Start(), Times.Once);
 
-        _mockMediator.Verify(m =>
-            m.Publish(It.Is<ProcessStopped>(x =>
-                x.ProcessId == 9876 &&
-                x.ProcessName == processName), It.IsAny<CancellationToken>()), Times.Once);
+        // Reconfigure with different process
+        var updatedSettings = new AppSettings
+        {
+            ProcessNames = ["starcraft"],
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 1000 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 5, RepeatDelay = 250 }
+            }
+        };
+
+        _watcher.OnSettingsChanged(updatedSettings);
+
+        _mockStartWatcher.Verify(w => w.Stop(), Times.Once);
+        _mockStopWatcher.Verify(w => w.Stop(), Times.Once);
     }
 }

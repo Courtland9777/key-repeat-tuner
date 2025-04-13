@@ -1,29 +1,29 @@
 ﻿using KeyRepeatTuner.Configuration;
-using KeyRepeatTuner.Events;
 using KeyRepeatTuner.Interfaces;
-using MediatR;
 using Microsoft.Extensions.Options;
 
 namespace KeyRepeatTuner.Services;
 
-public class StartupWatcherTrigger : INotificationHandler<AppStartupInitiated>
+public class StartupWatcherTrigger
 {
     private readonly IProcessEventWatcher _eventWatcher;
     private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
+    private readonly IProcessEventRouter _router;
 
     public StartupWatcherTrigger(
         IOptionsMonitor<AppSettings> optionsMonitor,
-        IProcessEventWatcher eventWatcher
-    )
+        IProcessEventWatcher eventWatcher,
+        IProcessEventRouter router)
     {
         _optionsMonitor = optionsMonitor;
         _eventWatcher = eventWatcher;
+        _router = router;
     }
 
-    public Task Handle(AppStartupInitiated notification, CancellationToken cancellationToken)
+    public void Trigger()
     {
         var settings = _optionsMonitor.CurrentValue;
         _eventWatcher.OnSettingsChanged(settings);
-        return Task.CompletedTask;
+        _router.OnStartup();
     }
 }

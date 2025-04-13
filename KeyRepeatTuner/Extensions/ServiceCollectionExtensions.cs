@@ -2,12 +2,10 @@
 using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.Validation;
 using KeyRepeatTuner.Configuration.ValueObjects;
-using KeyRepeatTuner.Events;
 using KeyRepeatTuner.Interfaces;
 using KeyRepeatTuner.Services;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.SystemAdapters.Wrappers;
-using MediatR;
 using Microsoft.Extensions.Options;
 
 namespace KeyRepeatTuner.Extensions;
@@ -56,9 +54,6 @@ public static class ServiceCollectionExtensions
         builder.Services.AddSingleton<IAppSettingsChangeHandler>(sp =>
             (IAppSettingsChangeHandler)sp.GetRequiredService<IKeyRepeatSettingsService>());
 
-        builder.Services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssemblies(typeof(ProcessStarted).Assembly));
-
         builder.Services.AddInfrastructureServices();
     }
 
@@ -69,7 +64,8 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IKeyboardRegistryReader, KeyboardRegistryReader>()
             .AddSingleton<ProcessEventWatcher>()
             .AddSingleton<IProcessEventWatcher>(sp => sp.GetRequiredService<ProcessEventWatcher>())
-            .AddSingleton<INotificationHandler<AppStartupInitiated>, StartupWatcherTrigger>()
+            .AddSingleton<StartupWatcherTrigger>()
+            .AddSingleton<IProcessEventRouter, ProcessStateTracker>()
             .AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>()
             .AddSingleton<ProcessStateTracker>()
             .AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>()

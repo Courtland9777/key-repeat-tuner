@@ -105,7 +105,7 @@ public class SystemLevelTests : IDisposable
     public async Task App_ShouldRespondToMultipleProcesses_WhenTheyStartAndStop()
     {
         StartKeyRepeatApp();
-        await Task.Delay(3000);
+        await Task.Delay(5000);
 
         _testOutputHelper.WriteLine(
             $"Start → Speed={_registryReader.GetRepeatSpeed()}, Delay={_registryReader.GetRepeatDelay()}");

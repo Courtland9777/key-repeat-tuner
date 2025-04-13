@@ -1,10 +1,8 @@
-﻿using KeyRepeatTuner.Events;
-using KeyRepeatTuner.Interfaces;
-using MediatR;
+﻿using KeyRepeatTuner.Interfaces;
 
 namespace KeyRepeatTuner.Services;
 
-public sealed class ProcessStateTracker : INotificationHandler<ProcessStarted>, INotificationHandler<ProcessStopped>
+public sealed class ProcessStateTracker : IProcessEventRouter
 {
     private readonly HashSet<int> _activeProcesses = [];
     private readonly IKeyRepeatSettingsService _keyRepeatSettingsService;
@@ -20,28 +18,37 @@ public sealed class ProcessStateTracker : INotificationHandler<ProcessStarted>, 
 
     private bool IsRunning => _activeProcesses.Count > 0;
 
-    public Task Handle(ProcessStarted notification, CancellationToken cancellationToken)
+    public void OnStartup()
     {
-        _activeProcesses.Add(notification.ProcessId);
-
-        _logger.LogDebug("Process started: PID={Pid}, Name={Name}", notification.ProcessId, notification.ProcessName);
-
-        if (_activeProcesses.Count == 1) _keyRepeatSettingsService.UpdateRunningState(IsRunning);
-
-        return Task.CompletedTask;
+        // No-op (hook for future use)
     }
 
-    public Task Handle(ProcessStopped notification, CancellationToken cancellationToken)
+    public void OnProcessStarted(int processId, string processName)
     {
-        _activeProcesses.Remove(notification.ProcessId);
+        if (!_activeProcesses.Add(processId))
+        {
+            _logger.LogDebug("Start event ignored: PID={Pid} already tracked.", processId);
+            return;
+        }
 
-        _logger.LogDebug("Process stopped: PID={Pid}, Name={Name}", notification.ProcessId, notification.ProcessName);
+        _logger.LogDebug("Process started: PID={Pid}, Name={Name}", processId, processName);
+
+        if (_activeProcesses.Count == 1) _keyRepeatSettingsService.UpdateRunningState(true);
+    }
+
+    public void OnProcessStopped(int processId, string processName)
+    {
+        if (!_activeProcesses.Remove(processId))
+        {
+            _logger.LogDebug("Stop event ignored: PID={Pid} not found in active processes.", processId);
+            return;
+        }
+
+        _logger.LogDebug("Process stopped: PID={Pid}, Name={Name}", processId, processName);
 
         if (!IsRunning)
             _keyRepeatSettingsService.UpdateRunningState(false);
         else
             _logger.LogInformation("Still in FastMode. Other processes still active.");
-
-        return Task.CompletedTask;
     }
 }
