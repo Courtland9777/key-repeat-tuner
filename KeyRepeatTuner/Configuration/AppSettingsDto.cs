@@ -2,6 +2,6 @@
 
 public class AppSettingsDto
 {
-    public List<string>? ProcessNames { get; set; }
-    public KeyRepeatSettings? KeyRepeat { get; set; }
+    public required List<string>? ProcessNames { get; set; }
+    public required KeyRepeatSettings? KeyRepeat { get; set; }
 }

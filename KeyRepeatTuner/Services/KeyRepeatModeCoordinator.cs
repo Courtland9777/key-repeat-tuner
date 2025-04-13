@@ -8,15 +8,18 @@ internal sealed class KeyRepeatModeCoordinator : IKeyRepeatSettingsService, IApp
 {
     private readonly IKeyRepeatApplier _applier;
     private readonly ILogger<KeyRepeatModeCoordinator> _logger;
+    private readonly KeyRepeatModeResolver _resolver;
     private KeyRepeatSettings _settings;
 
     public KeyRepeatModeCoordinator(
         ILogger<KeyRepeatModeCoordinator> logger,
         IKeyRepeatApplier applier,
-        IOptionsMonitor<AppSettings> options)
+        IOptionsMonitor<AppSettings> options,
+        KeyRepeatModeResolver resolver)
     {
         _logger = logger;
         _applier = applier;
+        _resolver = resolver;
         _settings = options.CurrentValue.KeyRepeat;
     }
 
@@ -28,8 +31,8 @@ internal sealed class KeyRepeatModeCoordinator : IKeyRepeatSettingsService, IApp
 
     public void UpdateRunningState(bool isRunning)
     {
-        var mode = isRunning ? "FastMode" : "Default";
-        var config = isRunning ? _settings.FastMode : _settings.Default;
+        var mode = KeyRepeatModeResolver.GetModeName(isRunning);
+        var config = KeyRepeatModeResolver.GetTargetState(isRunning, _settings);
 
         _logger.LogInformation("Changing state → Mode={Mode}, Speed={Speed}, Delay={Delay}",
             mode, config.RepeatSpeed, config.RepeatDelay);

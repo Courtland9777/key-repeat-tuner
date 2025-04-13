@@ -36,7 +36,8 @@ public class KeyRepeatModeCoordinatorTest
         var mockOptions = new Mock<IOptionsMonitor<AppSettings>>();
         mockOptions.Setup(o => o.CurrentValue).Returns(settingsOverride ?? CreateAppSettings());
 
-        return new KeyRepeatModeCoordinator(_mockLogger.Object, _mockApplier.Object, mockOptions.Object);
+        return new KeyRepeatModeCoordinator(_mockLogger.Object, _mockApplier.Object, mockOptions.Object,
+            new KeyRepeatModeResolver());
     }
 
     [Fact]

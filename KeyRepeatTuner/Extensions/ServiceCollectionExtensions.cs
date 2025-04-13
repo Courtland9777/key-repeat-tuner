@@ -69,8 +69,9 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IManagementEventWatcherFactory, ManagementEventWatcherFactory>()
             .AddSingleton<ProcessStateTracker>()
             .AddSingleton<IKeyboardSettingsApplier, KeyboardSettingsApplier>()
-            .AddSingleton<IKeyRepeatApplier, KeyRepeatApplier>() // ⬅️ new concrete class
-            .AddSingleton<IKeyRepeatSettingsService, KeyRepeatModeCoordinator>() // ⬅️ new coordinator
+            .AddSingleton<IKeyRepeatApplier, KeyRepeatApplier>()
+            .AddSingleton<KeyRepeatModeResolver>()
+            .AddSingleton<IKeyRepeatSettingsService, KeyRepeatModeCoordinator>()
             .AddSingleton<IAppSettingsChangeHandler>(sp =>
                 (IAppSettingsChangeHandler)sp.GetRequiredService<IKeyRepeatSettingsService>())
             .AddSingleton<IProcessProvider, ProcessProvider>()
