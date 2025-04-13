@@ -22,8 +22,15 @@ public class StartupWatcherTrigger
 
     public void Trigger()
     {
-        var settings = _optionsMonitor.CurrentValue;
-        _eventWatcher.OnSettingsChanged(settings);
+        var current = _optionsMonitor.CurrentValue;
+
+        _eventWatcher.OnSettingsChanged(current);
         _router.OnStartup();
+
+        _optionsMonitor.OnChange(settings =>
+        {
+            _eventWatcher.OnSettingsChanged(settings);
+            _router.OnStartup();
+        });
     }
 }
