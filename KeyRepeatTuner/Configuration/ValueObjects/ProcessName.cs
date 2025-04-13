@@ -4,6 +4,8 @@ namespace KeyRepeatTuner.Configuration.ValueObjects;
 
 public sealed partial class ProcessName
 {
+    private static readonly Regex ValidPatternRegex = ValidPattern();
+
     public ProcessName(string name)
     {
         Value = Normalize(name);
@@ -36,7 +38,7 @@ public sealed partial class ProcessName
 
         var nameOnly = Path.GetFileNameWithoutExtension(processName.Trim());
 
-        if (!ValidPattern().IsMatch(nameOnly))
+        if (!ValidPatternRegex.IsMatch(nameOnly))
             throw new ArgumentException($"Invalid process name format: '{processName}'", nameof(processName));
 
         return nameOnly;
