@@ -2,25 +2,13 @@
 using KeyRepeatTuner.Configuration.Validation;
 using KeyRepeatTuner.Configuration.ValueObjects;
 using KeyRepeatTuner.Tests.TestUtilities.Stubs;
-using Microsoft.Extensions.Logging;
-using Moq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace KeyRepeatTuner.Tests.Configuration;
 
 public class AppSettingsValidatorTests
 {
-    private readonly Mock<ILogger<AppSettingsValidator>> _mockLogger;
-    private readonly ITestOutputHelper _testOutputHelper;
-    private readonly AppSettingsValidator _validator;
-
-    public AppSettingsValidatorTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-        _mockLogger = new Mock<ILogger<AppSettingsValidator>>();
-        _validator = new AppSettingsValidator();
-    }
+    private readonly AppSettingsValidator _validator = new();
 
     [Fact]
     public void ValidConfiguration_ShouldPassValidation()
@@ -209,5 +197,26 @@ public class AppSettingsValidatorTests
         Assert.Contains(result.Errors, e =>
             e.PropertyName == "KeyRepeat.FastMode" &&
             e.ErrorMessage == "FastMode key repeat settings must be provided.");
+    }
+
+    [Fact]
+    public void EmptyProcessNames_ShouldFailValidation()
+    {
+        var settings = new AppSettings
+        {
+            ProcessNames = [],
+            KeyRepeat = new KeyRepeatSettings
+            {
+                Default = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 },
+                FastMode = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 300 }
+            }
+        };
+
+        var validator = new AppSettingsValidator();
+
+        var result = validator.Validate(settings);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("At least one process name must be specified"));
     }
 }
