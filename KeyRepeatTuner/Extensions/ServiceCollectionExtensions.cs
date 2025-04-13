@@ -74,6 +74,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IAppSettingsChangeHandler>(sp =>
                 (IAppSettingsChangeHandler)sp.GetRequiredService<IKeyRepeatSettingsService>())
             .AddSingleton<IProcessProvider, ProcessProvider>()
-            .AddSingleton<IUserContext, UserContext>();
+            .AddSingleton<IUserContext, UserContext>()
+            .AddHostedService<WatcherHostedService>();
     }
 }

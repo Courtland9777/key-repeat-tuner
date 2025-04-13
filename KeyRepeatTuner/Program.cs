@@ -1,5 +1,4 @@
 using KeyRepeatTuner.Extensions;
-using KeyRepeatTuner.Services;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using Serilog;
 
@@ -23,8 +22,6 @@ try
 
     using var app = builder.Build();
 
-    var startupTrigger = app.Services.GetRequiredService<StartupWatcherTrigger>();
-    startupTrigger.Trigger();
     var userContext = app.Services.GetRequiredService<IUserContext>();
     var skipAdmin = Environment.GetEnvironmentVariable("SKIP_ADMIN_CHECK") == "true";
     if (!skipAdmin && IsNotRunningUnderTest() && !userContext.IsAdministrator())
