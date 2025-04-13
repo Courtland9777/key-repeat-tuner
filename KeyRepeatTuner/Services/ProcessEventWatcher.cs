@@ -14,8 +14,7 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
     private readonly IProcessEventRouter _router;
     private readonly IManagementEventWatcherFactory _watcherFactory;
 
-    private readonly Dictionary<string, (IManagementEventWatcher start, IManagementEventWatcher stop)> _watchers =
-        new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, WmiWatcherSet> _watchers = new(StringComparer.OrdinalIgnoreCase);
 
     public ProcessEventWatcher(
         ILogger<ProcessEventWatcher> logger,
@@ -36,15 +35,14 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 
     public void Start()
     {
-        foreach (var (_, (start, stop)) in _watchers)
+        foreach (var watcher in _watchers.Values)
             try
             {
-                start.Start();
-                stop.Start();
+                watcher.Start();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to start WMI process watchers for process.");
+                _logger.LogError(ex, "Failed to start WMI watchers for process.");
             }
 
         _logger.LogInformation("WMI process watchers started.");
@@ -85,21 +83,19 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         OnProcessNamesChanged(added, removed);
     }
 
-    private void OnProcessNamesChanged(List<string> added, List<string> removed)
-    {
-        foreach (var name in removed)
-            StopWatcher(name);
-
-        foreach (var name in added)
-            StartWatcher(name);
-    }
-
     private void Configure(List<string> processNames)
     {
-        OnProcessNamesChanged(
-            [.. processNames.Except(_watchers.Keys, StringComparer.OrdinalIgnoreCase)],
-            [.. _watchers.Keys.Except(processNames, StringComparer.OrdinalIgnoreCase)]
-        );
+        var added = processNames.Except(_watchers.Keys, StringComparer.OrdinalIgnoreCase).ToList();
+        var removed = _watchers.Keys.Except(processNames, StringComparer.OrdinalIgnoreCase).ToList();
+
+        OnProcessNamesChanged(added, removed);
+    }
+
+    private void OnProcessNamesChanged(List<string> added, List<string> removed)
+    {
+        foreach (var name in removed) StopWatcher(name);
+
+        foreach (var name in added) StartWatcher(name);
     }
 
     private void StartWatcher(string name)
@@ -109,19 +105,14 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 
         try
         {
-            var startQuery = $"SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = '{exeName}'";
-            var stopQuery = $"SELECT * FROM Win32_ProcessStopTrace WHERE ProcessName = '{exeName}'";
+            var watcherSet = new WmiWatcherSet(
+                exeName,
+                _watcherFactory,
+                pid => OnStartEventArrived(pid, exeName),
+                pid => OnStopEventArrived(pid, exeName));
 
-            var startWatcher = _watcherFactory.Create(startQuery);
-            var stopWatcher = _watcherFactory.Create(stopQuery);
-
-            startWatcher.EventArrived += (_, e) => OnStartEventArrived(e, exeName);
-            stopWatcher.EventArrived += (_, e) => OnStopEventArrived(e, exeName);
-
-            startWatcher.Start();
-            stopWatcher.Start();
-
-            _watchers[processName.Value] = (startWatcher, stopWatcher);
+            watcherSet.Start();
+            _watchers[processName.Value] = watcherSet;
 
             _logger.LogInformation("WMI process watcher is now watching → {ProcessName}", processName.Value);
         }
@@ -133,15 +124,12 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
 
     private void StopWatcher(string name)
     {
-        if (!_watchers.TryGetValue(name, out var watchers))
+        if (!_watchers.TryGetValue(name, out var watcherSet))
             return;
 
         try
         {
-            watchers.start.Stop();
-            watchers.stop.Stop();
-            watchers.start.Dispose();
-            watchers.stop.Dispose();
+            watcherSet.Dispose();
         }
         catch (Exception ex)
         {
@@ -151,16 +139,14 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         _watchers.Remove(name);
     }
 
-    internal void OnStartEventArrived(EventArrivedEventArgs e, string processName)
+    internal void OnStartEventArrived(int pid, string processName)
     {
-        var pid = _adapterFactory(e).GetProcessId();
         _logger.LogInformation("WMI Start Event: PID {Pid}", pid);
         _router.OnProcessStarted(pid, processName);
     }
 
-    internal void OnStopEventArrived(EventArrivedEventArgs e, string processName)
+    internal void OnStopEventArrived(int pid, string processName)
     {
-        var pid = _adapterFactory(e).GetProcessId();
         _logger.LogInformation("WMI Stop Event: PID {Pid}", pid);
         _router.OnProcessStopped(pid, processName);
     }
