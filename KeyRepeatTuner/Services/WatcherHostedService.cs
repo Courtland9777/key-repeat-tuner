@@ -2,8 +2,9 @@
 
 namespace KeyRepeatTuner.Services;
 
-public class WatcherHostedService : BackgroundService
+public sealed class WatcherHostedService : IHostedService
 {
+    private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<WatcherHostedService> _logger;
     private readonly StartupWatcherTrigger _trigger;
     private readonly IProcessEventWatcher _watcher;
@@ -11,26 +12,54 @@ public class WatcherHostedService : BackgroundService
     public WatcherHostedService(
         ILogger<WatcherHostedService> logger,
         StartupWatcherTrigger trigger,
-        IProcessEventWatcher watcher)
+        IProcessEventWatcher watcher,
+        IHostApplicationLifetime lifetime)
     {
         _logger = logger;
         _trigger = trigger;
         _watcher = watcher;
+        _lifetime = lifetime;
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting WatcherHostedService.");
+        _logger.LogInformation("WatcherHostedService starting.");
 
-        _trigger.Trigger();
-
-        stoppingToken.Register(() =>
+        try
         {
-            _logger.LogInformation("Cancellation requested. Disposing watcher.");
-            _watcher.Dispose();
-        });
+            _trigger.Trigger();
+            _lifetime.ApplicationStopping.Register(OnShutdown);
+            _logger.LogInformation("WatcherHostedService started successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start WatcherHostedService.");
+            throw;
+        }
 
-        // Keep the service alive
         return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("WatcherHostedService stopping.");
+
+        try
+        {
+            _watcher.Dispose();
+            _logger.LogInformation("WMI watchers disposed.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error during shutdown cleanup.");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void OnShutdown()
+    {
+        _logger.LogInformation("Application shutdown triggered. Cleaning up WatcherHostedService.");
+        _watcher.Dispose(); // double safety
     }
 }
