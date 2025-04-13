@@ -1,6 +1,7 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Interfaces;
 using KeyRepeatTuner.Services;
+using KeyRepeatTuner.Tests.TestUtilities.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -94,5 +95,41 @@ public class KeyRepeatModeCoordinatorTest
         var exception = Record.Exception(() => coordinator.UpdateRunningState(true));
 
         Assert.Null(exception);
+    }
+
+    [Fact]
+    public void UpdateRunningState_ShouldLogAppliedFastMode()
+    {
+        var coordinator = CreateCoordinator();
+
+        coordinator.UpdateRunningState(true); // apply FastMode
+
+        _mockLogger.VerifyLogContains(LogLevel.Information, "Changing state → Mode=FastMode");
+    }
+
+    [Fact]
+    public void UpdateRunningState_ShouldLogAppliedDefaultMode()
+    {
+        var coordinator = CreateCoordinator();
+
+        coordinator.UpdateRunningState(false); // apply Default mode
+
+        _mockLogger.VerifyLogContains(LogLevel.Information, "Changing state → Mode=Default");
+    }
+
+    [Fact]
+    public void UpdateRunningState_WhenApplyThrows_ShouldLogWarning()
+    {
+        _mockApplier
+            .Setup(a => a.Apply(It.IsAny<KeyRepeatState>()))
+            .Throws(new InvalidOperationException("Keyboard API error"));
+
+        var coordinator = CreateCoordinator();
+
+        // Act
+        coordinator.UpdateRunningState(true); // Triggers Apply() which throws
+
+        // Assert
+        _mockLogger.VerifyLogContains(LogLevel.Error, "Failed to apply key repeat settings");
     }
 }
