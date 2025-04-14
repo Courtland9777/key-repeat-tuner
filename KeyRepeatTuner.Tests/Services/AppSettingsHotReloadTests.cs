@@ -1,7 +1,7 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.ValueObjects;
-using KeyRepeatTuner.Interfaces;
-using KeyRepeatTuner.Services;
+using KeyRepeatTuner.Monitoring.Interfaces;
+using KeyRepeatTuner.Monitoring.Services;
 using KeyRepeatTuner.Tests.TestUtilities.Stubs;
 using Moq;
 using Xunit;

@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Security.Principal;
-using KeyRepeatTuner.SystemAdapters.Wrappers;
+using KeyRepeatTuner.SystemAdapters.Processes;
 using Xunit;
 
 namespace KeyRepeatTuner.SystemTests.SystemLevel;

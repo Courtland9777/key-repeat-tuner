@@ -1,7 +1,8 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.ValueObjects;
-using KeyRepeatTuner.Interfaces;
-using KeyRepeatTuner.Services;
+using KeyRepeatTuner.Core.Interfaces;
+using KeyRepeatTuner.Core.Services;
+using KeyRepeatTuner.Monitoring.Services;
 using KeyRepeatTuner.Tests.TestUtilities.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

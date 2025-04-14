@@ -1,5 +1,5 @@
 ﻿using KeyRepeatTuner.Configuration;
-using KeyRepeatTuner.Services;
+using KeyRepeatTuner.Core.Services;
 using Xunit;
 
 namespace KeyRepeatTuner.Tests.Services;

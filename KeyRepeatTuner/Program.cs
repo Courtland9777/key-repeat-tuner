@@ -1,4 +1,5 @@
-using KeyRepeatTuner.Extensions;
+using KeyRepeatTuner.Infrastructure.Extensions;
+using KeyRepeatTuner.Infrastructure.ServiceCollection;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using Serilog;
 

@@ -1,7 +1,7 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.Validation;
 using KeyRepeatTuner.Configuration.ValueObjects;
-using KeyRepeatTuner.Interfaces;
+using KeyRepeatTuner.Core.Interfaces;
 using KeyRepeatTuner.Tests.TestUtilities.Stubs;
 using Microsoft.Extensions.Options;
 using Moq;

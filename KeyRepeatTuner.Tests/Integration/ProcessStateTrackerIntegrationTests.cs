@@ -1,5 +1,5 @@
-﻿using KeyRepeatTuner.Interfaces;
-using KeyRepeatTuner.Services;
+﻿using KeyRepeatTuner.Core.Interfaces;
+using KeyRepeatTuner.Monitoring.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;

@@ -1,4 +1,4 @@
-﻿using KeyRepeatTuner.Extensions;
+﻿using KeyRepeatTuner.Infrastructure.ServiceCollection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 

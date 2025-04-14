@@ -1,7 +1,7 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.ValueObjects;
-using KeyRepeatTuner.Interfaces;
-using KeyRepeatTuner.Services;
+using KeyRepeatTuner.Monitoring.Interfaces;
+using KeyRepeatTuner.Monitoring.Services;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.Tests.TestUtilities.Extensions;
 using KeyRepeatTuner.Tests.TestUtilities.Fakes;

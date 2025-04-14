@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Security.Principal;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
-using KeyRepeatTuner.SystemAdapters.Wrappers;
+using KeyRepeatTuner.SystemAdapters.Keyboard;
 using Microsoft.Win32;
 using Xunit;
 using Xunit.Abstractions;
