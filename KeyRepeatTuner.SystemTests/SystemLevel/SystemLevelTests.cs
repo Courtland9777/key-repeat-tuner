@@ -2,6 +2,7 @@
 using System.Security.Principal;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.SystemAdapters.Keyboard;
+using KeyRepeatTuner.SystemTests.TestUtilities.Helpers;
 using Microsoft.Win32;
 using Xunit;
 using Xunit.Abstractions;
@@ -56,7 +57,9 @@ public class SystemLevelTests : IDisposable
     [Fact]
     public async Task App_ShouldApplyKeyRepeatSettings_When_WatchedCmdProcessRuns()
     {
-        StartKeyRepeatApp();
+        using var app = new KeyRepeatAppRunner(_logFile);
+        app.Start();
+
         await Task.Delay(3000);
 
         var originalSpeed = _registryReader.GetRepeatSpeed();
@@ -82,7 +85,9 @@ public class SystemLevelTests : IDisposable
     [Fact]
     public async Task App_ShouldRevertToDefaultSettings_When_WatchedProcessExits()
     {
-        StartKeyRepeatApp();
+        using var app = new KeyRepeatAppRunner(_logFile);
+        app.Start();
+
         await Task.Delay(3000);
 
         var cmd = StartWatchedCmdProcess();
@@ -104,7 +109,9 @@ public class SystemLevelTests : IDisposable
     [Fact]
     public async Task App_ShouldRespondToMultipleProcesses_WhenTheyStartAndStop()
     {
-        StartKeyRepeatApp();
+        using var app = new KeyRepeatAppRunner(_logFile);
+        app.Start();
+
         await Task.Delay(5000);
 
         _testOutputHelper.WriteLine(
@@ -133,26 +140,6 @@ public class SystemLevelTests : IDisposable
         Assert.NotEqual(delayAfterExit, delayDuringFastMode);
     }
 
-    private void StartKeyRepeatApp(IEnumerable<KeyValuePair<string, string>>? configOverrides = null)
-    {
-        var startInfo = new ProcessStartInfo(GetAppPath())
-        {
-            RedirectStandardOutput = false,
-            UseShellExecute = false,
-            WorkingDirectory = Path.GetDirectoryName(GetAppPath())!
-        };
-
-        if (configOverrides is not null)
-            foreach (var kv in configOverrides)
-            {
-                var envKey = kv.Key.Replace(":", "__");
-                startInfo.Environment[envKey] = kv.Value;
-            }
-
-        _appProcess = Process.Start(startInfo)!;
-        Assert.NotNull(_appProcess);
-    }
-
     private static Process StartWatchedCmdProcess()
     {
         return Process.Start(new ProcessStartInfo
@@ -162,20 +149,6 @@ public class SystemLevelTests : IDisposable
             CreateNoWindow = true,
             UseShellExecute = false
         })!;
-    }
-
-    private static string GetAppPath()
-    {
-        var customPath = Environment.GetEnvironmentVariable("KR_APP_PATH");
-        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
-            return customPath;
-
-        const string fallbackPath =
-            @"C:\Users\Court\source\repos\KeyRepeatTuner\KeyRepeatTuner\bin\Debug\net8.0-windows\win-x64\KeyRepeatTuner.exe";
-        if (!File.Exists(fallbackPath))
-            throw new FileNotFoundException("KeyRepeatTuner.exe not found at expected location", fallbackPath);
-
-        return fallbackPath;
     }
 
     private static bool IsAdministrator()
