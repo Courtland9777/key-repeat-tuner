@@ -41,15 +41,6 @@ public class ProcessEventWatcherTests
     }
 
     [Fact]
-    public void Configure_ShouldCreateWatchers_AndStartThem()
-    {
-        _watcher.Configure("starcraft");
-
-        _mockStartWatcher.Verify(w => w.Start(), Times.Once);
-        _mockStopWatcher.Verify(w => w.Start(), Times.Once);
-    }
-
-    [Fact]
     public void OnStartEventArrived_ShouldCallRouter()
     {
         // Act

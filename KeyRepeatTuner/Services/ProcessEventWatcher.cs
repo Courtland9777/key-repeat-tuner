@@ -28,11 +28,6 @@ public sealed class ProcessEventWatcher : IProcessEventWatcher
         _adapterFactory = adapterFactory ?? (e => new EventArrivedEventArgsAdapter(e));
     }
 
-    public void Configure(string processName)
-    {
-        Configure([processName]);
-    }
-
     public void Start()
     {
         foreach (var watcher in _watchers.Values)

@@ -50,10 +50,6 @@ public static class ServiceCollectionExtensions
     {
         builder.Services.AddSingleton<IValidator<AppSettings>, AppSettingsValidator>();
 
-        builder.Services.AddSingleton<IKeyRepeatSettingsService, KeyRepeatModeCoordinator>();
-        builder.Services.AddSingleton<IAppSettingsChangeHandler>(sp =>
-            (IAppSettingsChangeHandler)sp.GetRequiredService<IKeyRepeatSettingsService>());
-
         builder.Services.AddInfrastructureServices();
     }
 
