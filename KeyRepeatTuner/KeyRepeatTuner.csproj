@@ -14,6 +14,7 @@
     <Platforms>x64</Platforms>
     <ExcludeFilesFromPublish>appsettings.Development.json</ExcludeFilesFromPublish>
     <PublishTrimmed>False</PublishTrimmed>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
