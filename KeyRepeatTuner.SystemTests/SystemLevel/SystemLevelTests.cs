@@ -18,7 +18,6 @@ public class SystemLevelTests : IDisposable
     private readonly string? _originalSpeed;
     private readonly IKeyboardRegistryReader _registryReader;
     private readonly ITestOutputHelper _testOutputHelper;
-    private Process? _appProcess;
 
     public SystemLevelTests(ITestOutputHelper testOutputHelper)
     {
@@ -33,11 +32,6 @@ public class SystemLevelTests : IDisposable
 
     public void Dispose()
     {
-        if (_appProcess is { HasExited: false })
-            _appProcess.Kill(true);
-
-        _appProcess?.WaitForExit(5000);
-
         if (File.Exists(_logFile))
         {
             var logs = File.ReadAllText(_logFile);
