@@ -11,7 +11,6 @@ using KeyRepeatTuner.SystemAdapters.Keyboard;
 using KeyRepeatTuner.SystemAdapters.Processes;
 using KeyRepeatTuner.SystemAdapters.User;
 using KeyRepeatTuner.SystemAdapters.WMI;
-using KeyRepeatTuner.UI.Tray;
 using Microsoft.Extensions.Options;
 
 namespace KeyRepeatTuner.Infrastructure.ServiceCollection;
@@ -57,7 +56,6 @@ public static class ServiceCollectionExtensions
         builder.Services.AddSingleton<IValidator<AppSettings>, AppSettingsValidator>();
 
         builder.Services.AddInfrastructureServices();
-        if (Environment.UserInteractive) builder.Services.AddHostedService<TrayIconHostedService>();
     }
 
 
