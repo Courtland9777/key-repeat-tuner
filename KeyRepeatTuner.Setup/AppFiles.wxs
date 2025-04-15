@@ -3,12 +3,12 @@
   <Fragment>
     <ComponentGroup Id="KeyRepeatTunerAppComponents" Directory="INSTALLFOLDER">
 
-      <Component Guid="*" >
-        <File Source="$(ProjectDir)publish\KeyRepeatTuner.exe" />
+      <Component Guid="*">
+        <File Source="..\KeyRepeatTuner\bin\Release\net8.0-windows\win-x64\publish\win-x64\KeyRepeatTuner.exe" />
       </Component>
 
-      <Component Guid="*" >
-        <File Source="$(ProjectDir)publish\appsettings.json" />
+      <Component Guid="*">
+        <File Source="..\KeyRepeatTuner\bin\Release\net8.0-windows\win-x64\publish\win-x64\appsettings.json" />
       </Component>
 
     </ComponentGroup>

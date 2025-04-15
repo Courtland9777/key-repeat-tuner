@@ -8,9 +8,9 @@
 
   <!-- Ensure the app is published before the installer builds -->
   <Target Name="PublishApp" BeforeTargets="Build">
-    <Exec Command="dotnet publish &quot;..\KeyRepeatTuner\KeyRepeatTuner.csproj&quot; -c Release -r win-x64 --self-contained false -o &quot;$(ProjectDir)publish&quot;" />
-
+    <Exec Command="dotnet publish ..\KeyRepeatTuner\KeyRepeatTuner.csproj -c Release -r win-x64 -p:PublishProfile=FolderProfile" />
   </Target>
+
 
   <ItemGroup>
     <ProjectReference Include="..\KeyRepeatTuner\KeyRepeatTuner.csproj" />
