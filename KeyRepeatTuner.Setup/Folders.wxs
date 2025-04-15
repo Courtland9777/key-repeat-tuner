@@ -3,6 +3,9 @@
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="KeyRepeatTuner" />
     </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="KeyRepeatTuner" />
+    </StandardDirectory>
   </Fragment>
 
 </Wix>

@@ -10,7 +10,10 @@
     <Feature Id="MainFeature" Title="KeyRepeatTuner" Level="1">
       <ComponentGroupRef Id="KeyRepeatTunerAppComponents" />
       <ComponentGroupRef Id="AutoStartRegistry" />
+      <ComponentGroupRef Id="KeyRepeatTunerShortcuts" />
     </Feature>
+    <Icon Id="AppIcon.ico" SourceFile="..\KeyRepeatTuner\Assets\AppIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
   </Package>
 
 </Wix>

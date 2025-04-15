@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="KeyRepeatTunerShortcuts" Directory="ApplicationProgramsFolder">
+
+      <!-- App Shortcut -->
+      <Component Guid="9ed8fc20-eb1c-41ee-b7fc-a1abee87454a">
+        <Shortcut Id="KeyRepeatTunerShortcut"
+                  Name="KeyRepeatTuner"
+                  Target="[INSTALLFOLDER]KeyRepeatTuner.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon.ico"
+                  Advertise="no" />
+        <RegistryValue Root="HKCU" Key="Software\KeyRepeatTuner" Name="ShortcutInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <!-- Uninstall Shortcut -->
+      <Component Guid="b4d776ef-2416-407f-b9b3-1b5461670c27">
+        <Shortcut Id="UninstallShortcut"
+                  Name="Uninstall KeyRepeatTuner"
+                  Target="[SystemFolder]msiexec.exe"
+                  Arguments="/x [ProductCode]"
+                  Icon="AppIcon.ico"
+                  Advertise="no" />
+        <RegistryValue Root="HKCU" Key="Software\KeyRepeatTuner" Name="UninstallShortcutInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+</Wix>
