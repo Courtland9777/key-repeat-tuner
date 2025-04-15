@@ -1,0 +1,12 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="KeyRepeatTunerAppComponents" Directory="INSTALLFOLDER">
+      <Component Guid="*">
+        <File Source="$(var.KeyRepeatTuner.TargetPath)" />
+      </Component>
+      <Component Guid="*">
+        <File Source="$(var.KeyRepeatTuner.ProjectDir)appsettings.json" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

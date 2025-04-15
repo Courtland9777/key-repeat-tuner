@@ -1,0 +1,5 @@
+﻿<Project Sdk="WixToolset.Sdk/6.0.0">
+  <ItemGroup>
+    <ProjectReference Include="..\KeyRepeatTuner\KeyRepeatTuner.csproj" />
+  </ItemGroup>
+</Project>
