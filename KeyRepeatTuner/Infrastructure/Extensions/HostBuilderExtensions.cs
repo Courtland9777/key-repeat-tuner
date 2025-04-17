@@ -1,8 +1,10 @@
-﻿namespace KeyRepeatTuner.Infrastructure.Extensions;
+﻿using KeyRepeatTuner.Infrastructure.ServiceCollection;
+
+namespace KeyRepeatTuner.Infrastructure.Extensions;
 
 public static class HostBuilderExtensions
 {
-    public static HostApplicationBuilder SetServiceName(this HostApplicationBuilder builder)
+    private static HostApplicationBuilder SetServiceName(this HostApplicationBuilder builder)
     {
         builder.Services.Configure<WindowsServiceLifetimeOptions>(options =>
             options.ServiceName = "Key Repeat Tuner");
@@ -10,8 +12,19 @@ public static class HostBuilderExtensions
         return builder;
     }
 
+    public static IHost BuildKeyRepeatTunerApp(string[] args)
+    {
+        var builder = Host.CreateApplicationBuilder(args)
+            .UseUserScopedAppSettings("KeyRepeatTuner")
+            .ConfigureSerilog()
+            .SetServiceName()
+            .AddValidatedAppSettings()
+            .AddApplicationServices();
 
-    public static HostApplicationBuilder UseUserScopedAppSettings(this HostApplicationBuilder builder, string appName)
+        return builder.Build();
+    }
+
+    private static HostApplicationBuilder UseUserScopedAppSettings(this HostApplicationBuilder builder, string appName)
     {
         var appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

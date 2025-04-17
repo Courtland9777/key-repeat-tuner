@@ -17,7 +17,7 @@ namespace KeyRepeatTuner.Infrastructure.ServiceCollection;
 
 public static class ServiceCollectionExtensions
 {
-    public static void AddValidatedAppSettings(this IHostApplicationBuilder builder)
+    public static HostApplicationBuilder AddValidatedAppSettings(this HostApplicationBuilder builder)
     {
         builder.Services
             .AddOptions<AppSettingsDto>()
@@ -48,14 +48,17 @@ public static class ServiceCollectionExtensions
                     return mapped;
                 });
         });
+
+        return builder;
     }
 
 
-    public static void AddApplicationServices(this IHostApplicationBuilder builder)
+    public static HostApplicationBuilder AddApplicationServices(this HostApplicationBuilder builder)
     {
         builder.Services.AddSingleton<IValidator<AppSettings>, AppSettingsValidator>();
 
         builder.Services.AddInfrastructureServices();
+        return builder;
     }
 
 
