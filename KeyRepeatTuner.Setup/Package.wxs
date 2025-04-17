@@ -1,0 +1,19 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="KeyRepeatTuner"
+           Manufacturer="Courtland9777"
+           Version="1.0.0.0"
+           UpgradeCode="9ed8fc20-eb1c-41ee-b7fc-a1abee87454a"
+           Scope="perMachine"
+           InstallerVersion="500"
+           Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <Feature Id="MainFeature" Title="KeyRepeatTuner" Level="1">
+      <ComponentGroupRef Id="KeyRepeatTunerAppComponents" />
+      <ComponentGroupRef Id="AutoStartRegistry" />
+      <ComponentGroupRef Id="KeyRepeatTunerShortcuts" />
+    </Feature>
+    <Icon Id="AppIcon.ico" SourceFile="..\KeyRepeatTuner\Assets\AppIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+  </Package>
+
+</Wix>

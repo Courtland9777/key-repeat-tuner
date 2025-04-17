@@ -4,7 +4,7 @@ using KeyRepeatTuner.SystemAdapters.Interfaces;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(new ConfigurationBuilder().AddJsonFile("appsettings.json", true, true).Build())
+    .ReadFromUserScopedAppSettings("KeyRepeatTuner")
     .CreateLogger();
 
 AppDomain.CurrentDomain.UnhandledException += (_, e) =>
@@ -15,7 +15,7 @@ AppDomain.CurrentDomain.UnhandledException += (_, e) =>
 
 try
 {
-    var builder = Host.CreateApplicationBuilder(args);
+    var builder = Host.CreateApplicationBuilder(args).UseUserScopedAppSettings("KeyRepeatTuner");
     builder.ConfigureSerilog();
     builder.SetServiceName();
     builder.AddValidatedAppSettings();
