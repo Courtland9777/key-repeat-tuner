@@ -2,11 +2,14 @@
 
 public static class HostBuilderExtensions
 {
-    public static void SetServiceName(this IHostApplicationBuilder builder)
+    public static HostApplicationBuilder SetServiceName(this HostApplicationBuilder builder)
     {
         builder.Services.Configure<WindowsServiceLifetimeOptions>(options =>
             options.ServiceName = "Key Repeat Tuner");
+
+        return builder;
     }
+
 
     public static HostApplicationBuilder UseUserScopedAppSettings(this HostApplicationBuilder builder, string appName)
     {

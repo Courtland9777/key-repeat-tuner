@@ -3,26 +3,26 @@ using KeyRepeatTuner.Infrastructure.ServiceCollection;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using Serilog;
 
-Log.Logger = new LoggerConfiguration()
-    .ReadFromUserScopedAppSettings("KeyRepeatTuner")
-    .CreateLogger();
+var builder = Host.CreateApplicationBuilder(args)
+    .UseUserScopedAppSettings("KeyRepeatTuner")
+    .ConfigureSerilog()
+    .SetServiceName();
+
+builder.AddValidatedAppSettings();
+builder.AddApplicationServices();
+
+using var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 AppDomain.CurrentDomain.UnhandledException += (_, e) =>
 {
-    Log.Fatal((Exception)e.ExceptionObject, "Unhandled exception in AppDomain");
+    logger.LogCritical((Exception)e.ExceptionObject, "Unhandled exception in AppDomain");
 };
 
 
 try
 {
-    var builder = Host.CreateApplicationBuilder(args).UseUserScopedAppSettings("KeyRepeatTuner");
-    builder.ConfigureSerilog();
-    builder.SetServiceName();
-    builder.AddValidatedAppSettings();
-    builder.AddApplicationServices();
-
-    using var app = builder.Build();
-
     var userContext = app.Services.GetRequiredService<IUserContext>();
     var skipAdmin = Environment.GetEnvironmentVariable("SKIP_ADMIN_CHECK") == "true";
     if (!skipAdmin && IsNotRunningUnderTest() && !userContext.IsAdministrator())

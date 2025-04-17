@@ -4,7 +4,7 @@ namespace KeyRepeatTuner.Infrastructure.Extensions;
 
 public static class LoggingExtensions
 {
-    public static void ConfigureSerilog(this IHostApplicationBuilder builder)
+    public static HostApplicationBuilder ConfigureSerilog(this HostApplicationBuilder builder)
     {
         var configuration = builder.Configuration;
 
@@ -17,6 +17,8 @@ public static class LoggingExtensions
 
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(loggerConfig.CreateLogger());
+
+        return builder;
     }
 
     public static LoggerConfiguration ReadFromUserScopedAppSettings(
