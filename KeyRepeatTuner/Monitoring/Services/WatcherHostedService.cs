@@ -27,9 +27,10 @@ public sealed class WatcherHostedService : IHostedService
 
         try
         {
+            _logger.LogInformation("WatcherHostedService starting...");
             _trigger.Trigger();
+            _logger.LogInformation("WMI watcher trigger initialized.");
             _lifetime.ApplicationStopping.Register(OnShutdown);
-            _logger.LogInformation("WatcherHostedService started successfully.");
         }
         catch (Exception ex)
         {
@@ -59,7 +60,7 @@ public sealed class WatcherHostedService : IHostedService
 
     private void OnShutdown()
     {
-        _logger.LogInformation("Application shutdown triggered. Cleaning up WatcherHostedService.");
-        _watcher.Dispose(); // double safety
+        _logger.LogInformation("Application shutdown triggered. Disposing WMI watchers...");
+        _watcher.Dispose();
     }
 }

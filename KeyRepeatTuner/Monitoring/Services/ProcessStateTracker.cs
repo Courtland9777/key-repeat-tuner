@@ -21,7 +21,7 @@ public sealed class ProcessStateTracker : IProcessEventRouter
 
     public void OnStartup()
     {
-        // No-op (hook for future use)
+        _logger.LogInformation("ProcessStateTracker initialized. No processes tracked yet.");
     }
 
     public void OnProcessStarted(int processId, string processName)
@@ -32,9 +32,12 @@ public sealed class ProcessStateTracker : IProcessEventRouter
             return;
         }
 
-        _logger.LogDebug("Process started: PID={Pid}, Name={Name}", processId, processName);
+        _logger.LogInformation("🟢 Process STARTED: {ProcessName} (PID={Pid})", processName, processId);
+        _logger.LogInformation("Active process count: {Count}", _activeProcesses.Count);
 
-        if (_activeProcesses.Count == 1) _keyRepeatSettingsService.UpdateRunningState(true);
+        if (_activeProcesses.Count != 1) return;
+        _logger.LogInformation("Switching to FastMode → First tracked process detected.");
+        _keyRepeatSettingsService.UpdateRunningState(true);
     }
 
     public void OnProcessStopped(int processId, string processName)
@@ -45,11 +48,18 @@ public sealed class ProcessStateTracker : IProcessEventRouter
             return;
         }
 
-        _logger.LogDebug("Process stopped: PID={Pid}, Name={Name}", processId, processName);
+        _logger.LogInformation("🔴 Process STOPPED: {ProcessName} (PID={Pid})", processName, processId);
+        _logger.LogInformation("Remaining active processes: {Count}", _activeProcesses.Count);
 
         if (!IsRunning)
+        {
+            _logger.LogInformation("Switching to DefaultMode → No more tracked processes.");
             _keyRepeatSettingsService.UpdateRunningState(false);
+        }
         else
-            _logger.LogInformation("Still in FastMode. Other processes still active.");
+        {
+            _logger.LogInformation("Still in FastMode. Remaining tracked PIDs: {Pids}",
+                string.Join(", ", _activeProcesses));
+        }
     }
 }
