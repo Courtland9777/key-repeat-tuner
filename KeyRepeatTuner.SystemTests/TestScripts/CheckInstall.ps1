@@ -1,5 +1,5 @@
 $InstallDir = "C:\Program Files\Key Repeat Tuner"
-$StartMenu = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Key Repeat Tuner"
+$StartMenu = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Key Repeat Tuner"
 $RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 $AppRegKey = "KeyRepeatTuner"
 
