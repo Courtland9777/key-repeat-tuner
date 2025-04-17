@@ -10,7 +10,7 @@
       <Component Guid="*">
         <File Source="..\KeyRepeatTuner\bin\Release\net8.0-windows\win-x64\publish\win-x64\appsettings.json" />
       </Component>
-
+      <File Source="$(ProjectDir)EditSettings.cmd" />
     </ComponentGroup>
   </Fragment>
 </Wix>

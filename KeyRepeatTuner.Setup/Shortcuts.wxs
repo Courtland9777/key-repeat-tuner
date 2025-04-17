@@ -6,13 +6,15 @@
       <!-- App Shortcut -->
       <Component Guid="9ed8fc20-eb1c-41ee-b7fc-a1abee87454a">
         <Shortcut Id="KeyRepeatTunerShortcut"
-                  Name="KeyRepeatTuner"
+                  Name="Key Repeat Tuner"
                   Target="[INSTALLFOLDER]KeyRepeatTuner.exe"
                   WorkingDirectory="INSTALLFOLDER"
                   Icon="AppIcon.ico"
                   Advertise="no" />
-        <RemoveFile Id="RemoveAppShortcut" Name="KeyRepeatTuner.lnk" On="uninstall" />
-        <RemoveFolder Id="RemoveAppShortcutFolder" On="uninstall" />
+        <RemoveFile Id="RemoveAppShortcut"
+                    Name="Key Repeat Tuner.lnk"
+                    Directory="ApplicationProgramsFolder"
+                    On="uninstall" />
         <RegistryValue Root="HKCU"
                        Key="Software\KeyRepeatTuner"
                        Name="ShortcutInstalled"
@@ -24,16 +26,50 @@
       <!-- Uninstall Shortcut -->
       <Component Guid="b4d776ef-2416-407f-b9b3-1b5461670c27">
         <Shortcut Id="UninstallShortcut"
-                  Name="Uninstall KeyRepeatTuner"
+                  Name="Uninstall Key Repeat Tuner"
                   Target="[SystemFolder]msiexec.exe"
                   Arguments="/x [ProductCode]"
                   Icon="AppIcon.ico"
                   Advertise="no" />
-        <RemoveFile Id="RemoveUninstallShortcut" Name="Uninstall KeyRepeatTuner.lnk" On="uninstall" />
-        <RemoveFolder Id="RemoveUninstallShortcutFolder" On="uninstall" />
+        <RemoveFile Id="RemoveUninstallShortcut"
+                    Name="Uninstall Key Repeat Tuner.lnk"
+                    Directory="ApplicationProgramsFolder"
+                    On="uninstall" />
         <RegistryValue Root="HKCU"
                        Key="Software\KeyRepeatTuner"
                        Name="UninstallShortcutInstalled"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+
+      <!-- Edit User Settings Shortcut -->
+      <Component Guid="b12f48db-7888-4b35-bbdb-fcd82381f2d4">
+        <Shortcut Id="UserSettingsShortcut"
+                  Name="Edit User Settings"
+                  Target="[INSTALLFOLDER]EditSettings.cmd"
+                  Icon="AppIcon.ico"
+                  Advertise="no" />
+        <RemoveFile Id="RemoveUserSettingsShortcut"
+                    Name="Edit User Settings.lnk"
+                    Directory="ApplicationProgramsFolder"
+                    On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\KeyRepeatTuner"
+                       Name="UserSettingsShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+
+      <!-- Clean up the Start Menu folder itself -->
+      <Component Guid="f3e743f9-f3d3-4050-86e4-8ea1d103ec57">
+        <RemoveFolder Id="RemoveStartMenuFolder"
+                      Directory="ApplicationProgramsFolder"
+                      On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\KeyRepeatTuner"
+                       Name="StartMenuCleanup"
                        Type="integer"
                        Value="1"
                        KeyPath="yes" />
