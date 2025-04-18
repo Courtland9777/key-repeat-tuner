@@ -2,7 +2,7 @@
 
 namespace KeyRepeatTuner.Configuration.ValueObjects;
 
-internal sealed partial class ProcessName
+internal readonly partial record struct ProcessName
 {
     private static readonly Regex ValidPatternRegex = ValidPattern();
 
@@ -13,23 +13,18 @@ internal sealed partial class ProcessName
 
     public string Value { get; }
 
+    public string WithExe()
+    {
+        return $"{Value}.exe";
+    }
+
     public override string ToString()
     {
-        return Value ?? throw new InvalidOperationException("ProcessName is not initialized.");
-    }
-
-    public static implicit operator string(ProcessName pn)
-    {
-        return pn.Value;
-    }
-
-    public static implicit operator ProcessName(string name)
-    {
-        return new ProcessName(name);
+        return Value;
     }
 
     [GeneratedRegex("^[a-zA-Z0-9_-]+$")]
-    public static partial Regex ValidPattern();
+    private static partial Regex ValidPattern();
 
     private static string Normalize(string processName)
     {
@@ -42,10 +37,5 @@ internal sealed partial class ProcessName
             throw new ArgumentException($"Invalid process name format: '{processName}'", nameof(processName));
 
         return nameOnly;
-    }
-
-    public string WithExe()
-    {
-        return $"{Value}.exe";
     }
 }

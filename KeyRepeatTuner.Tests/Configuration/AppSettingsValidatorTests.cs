@@ -33,12 +33,12 @@ public class AppSettingsValidatorTests
     }
 
     [Fact]
-    public void NullProcessName_ShouldFailValidation()
+    public void InvalidProcessName_ShouldThrowDuringConstruction()
     {
         // Arrange
         var settings = new AppSettings
         {
-            ProcessNames = [null!],
+            ProcessNames = [new ProcessName("   ")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 },
@@ -52,8 +52,7 @@ public class AppSettingsValidatorTests
         var result = validator.Validate(settings);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("cannot be null"));
+        Assert.Throws<ArgumentException>(() => new ProcessName("   "));
     }
 
 

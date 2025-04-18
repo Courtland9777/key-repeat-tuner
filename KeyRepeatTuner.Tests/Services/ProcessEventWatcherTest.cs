@@ -67,7 +67,7 @@ public class ProcessEventWatcherTests
         // Initial config
         var initialSettings = new AppSettings
         {
-            ProcessNames = ["notepad"],
+            ProcessNames = [BuilderExtensions.CreateProcessName("notepad")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 10, RepeatDelay = 750 },
@@ -82,7 +82,7 @@ public class ProcessEventWatcherTests
         // Reconfigure with different process
         var updatedSettings = new AppSettings
         {
-            ProcessNames = ["starcraft"],
+            ProcessNames = [BuilderExtensions.CreateProcessName("starcraft")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 1000 },

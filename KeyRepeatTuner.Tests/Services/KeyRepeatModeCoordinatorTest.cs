@@ -23,11 +23,13 @@ public class KeyRepeatModeCoordinatorTest
         };
     }
 
+
     private static AppSettings CreateAppSettings()
     {
         return new AppSettings
         {
-            ProcessNames = ["notepad", "starcraft"],
+            ProcessNames =
+                [BuilderExtensions.CreateProcessName("notepad"), BuilderExtensions.CreateProcessName("starcraft")],
             KeyRepeat = CreateSettings()
         };
     }
@@ -47,8 +49,8 @@ public class KeyRepeatModeCoordinatorTest
         var coordinator = CreateCoordinator();
         coordinator.UpdateRunningState(true);
 
-        _mockApplier.Verify(a => a.Apply(It.Is<KeyRepeatState>(
-            s => s.RepeatSpeed == 25 && s.RepeatDelay == 500)), Times.Once);
+        _mockApplier.Verify(a => a.Apply(It.Is<KeyRepeatState>(s => s.RepeatSpeed == 25 && s.RepeatDelay == 500)),
+            Times.Once);
     }
 
     [Fact]
@@ -57,8 +59,8 @@ public class KeyRepeatModeCoordinatorTest
         var coordinator = CreateCoordinator();
         coordinator.UpdateRunningState(false);
 
-        _mockApplier.Verify(a => a.Apply(It.Is<KeyRepeatState>(
-            s => s.RepeatSpeed == 10 && s.RepeatDelay == 750)), Times.Once);
+        _mockApplier.Verify(a => a.Apply(It.Is<KeyRepeatState>(s => s.RepeatSpeed == 10 && s.RepeatDelay == 750)),
+            Times.Once);
     }
 
     [Fact]
@@ -68,7 +70,7 @@ public class KeyRepeatModeCoordinatorTest
 
         var updatedSettings = new AppSettings
         {
-            ProcessNames = ["quake"],
+            ProcessNames = [BuilderExtensions.CreateProcessName("quake")],
             KeyRepeat = new KeyRepeatSettings
             {
                 Default = new KeyRepeatState { RepeatSpeed = 15, RepeatDelay = 1000 },
@@ -79,8 +81,8 @@ public class KeyRepeatModeCoordinatorTest
         coordinator.OnSettingsChanged(updatedSettings);
         coordinator.UpdateRunningState(true);
 
-        _mockApplier.Verify(a => a.Apply(It.Is<KeyRepeatState>(
-            s => s.RepeatSpeed == 5 && s.RepeatDelay == 250)), Times.Once);
+        _mockApplier.Verify(a => a.Apply(It.Is<KeyRepeatState>(s => s.RepeatSpeed == 5 && s.RepeatDelay == 250)),
+            Times.Once);
     }
 
     [Fact]

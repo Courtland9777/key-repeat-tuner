@@ -27,21 +27,6 @@ public class ProcessNameTests
         Assert.Throws<ArgumentException>(() => new ProcessName(input));
     }
 
-    [Fact]
-    public void ImplicitConversion_ToString_ShouldReturnRawValue()
-    {
-        ProcessName pn = new("game");
-        string str = pn;
-        Assert.Equal("game", str);
-    }
-
-    [Fact]
-    public void ImplicitConversion_FromString_ShouldCreateInstance()
-    {
-        const string str = "notepad";
-        ProcessName pn = str;
-        Assert.Equal("notepad", pn.Value);
-    }
 
     [Fact]
     public void WithExe_ShouldAppendExeExtension()
