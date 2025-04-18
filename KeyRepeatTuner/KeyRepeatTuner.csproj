@@ -13,7 +13,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <Platforms>x64</Platforms>
     <ExcludeFilesFromPublish>appsettings.Development.json</ExcludeFilesFromPublish>
-    <PublishTrimmed>False</PublishTrimmed>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
