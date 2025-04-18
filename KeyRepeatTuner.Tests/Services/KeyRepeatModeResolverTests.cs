@@ -17,7 +17,7 @@ public class KeyRepeatModeResolverTests
             Default = new KeyRepeatState { RepeatSpeed = 25, RepeatDelay = 1000 }
         };
 
-        var result = KeyRepeatModeResolver.GetTargetState(true, settings);
+        var result = _resolver.GetTargetState(true, settings);
 
         Assert.Equal(2, result.RepeatSpeed);
         Assert.Equal(300, result.RepeatDelay);
@@ -32,7 +32,7 @@ public class KeyRepeatModeResolverTests
             Default = new KeyRepeatState { RepeatSpeed = 25, RepeatDelay = 1000 }
         };
 
-        var result = KeyRepeatModeResolver.GetTargetState(false, settings);
+        var result = _resolver.GetTargetState(false, settings);
 
         Assert.Equal(25, result.RepeatSpeed);
         Assert.Equal(1000, result.RepeatDelay);
@@ -43,7 +43,7 @@ public class KeyRepeatModeResolverTests
     [InlineData(false, "Default")]
     public void GetModeName_ReturnsCorrectLabel(bool isRunning, string expected)
     {
-        var mode = KeyRepeatModeResolver.GetModeName(isRunning);
+        var mode = _resolver.GetModeName(isRunning);
         Assert.Equal(expected, mode);
     }
 }

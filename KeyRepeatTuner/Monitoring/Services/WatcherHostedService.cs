@@ -1,4 +1,5 @@
-﻿using KeyRepeatTuner.Monitoring.Interfaces;
+﻿using KeyRepeatTuner.Core.Interfaces;
+using KeyRepeatTuner.Monitoring.Interfaces;
 
 namespace KeyRepeatTuner.Monitoring.Services;
 
@@ -6,12 +7,12 @@ public sealed class WatcherHostedService : IHostedService
 {
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<WatcherHostedService> _logger;
-    private readonly StartupWatcherTrigger _trigger;
+    private readonly IStartupWatcherTrigger _trigger;
     private readonly IProcessEventWatcher _watcher;
 
     public WatcherHostedService(
         ILogger<WatcherHostedService> logger,
-        StartupWatcherTrigger trigger,
+        IStartupWatcherTrigger trigger,
         IProcessEventWatcher watcher,
         IHostApplicationLifetime lifetime)
     {

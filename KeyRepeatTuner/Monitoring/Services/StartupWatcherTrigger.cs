@@ -1,10 +1,11 @@
 ﻿using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Core.Interfaces;
 using KeyRepeatTuner.Monitoring.Interfaces;
 using Microsoft.Extensions.Options;
 
 namespace KeyRepeatTuner.Monitoring.Services;
 
-public class StartupWatcherTrigger
+public class StartupWatcherTrigger : IStartupWatcherTrigger
 {
     private readonly IProcessEventWatcher _eventWatcher;
     private readonly IOptionsMonitor<AppSettings> _optionsMonitor;
