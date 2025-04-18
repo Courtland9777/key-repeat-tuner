@@ -8,18 +8,25 @@ public class KeyRepeatSettingsValidator : AbstractValidator<KeyRepeatSettings>
     {
         RuleFor(x => x.Default)
             .NotNull().WithMessage("Default key repeat settings must be provided.")
-            .DependentRules(() =>
-            {
-                RuleFor(x => x.Default.RepeatSpeed).IsRepeatSpeed();
-                RuleFor(x => x.Default.RepeatDelay).IsRepeatDelay();
-            });
+            .SetValidator(CreateKeyRepeatStateValidator("Default"));
 
         RuleFor(x => x.FastMode)
             .NotNull().WithMessage("FastMode key repeat settings must be provided.")
-            .DependentRules(() =>
-            {
-                RuleFor(x => x.FastMode.RepeatSpeed).IsRepeatSpeed();
-                RuleFor(x => x.FastMode.RepeatDelay).IsRepeatDelay();
-            });
+            .SetValidator(CreateKeyRepeatStateValidator("FastMode"));
+    }
+
+    private static InlineValidator<KeyRepeatState> CreateKeyRepeatStateValidator(string prefix)
+    {
+        var validator = new InlineValidator<KeyRepeatState>();
+
+        validator.RuleFor(s => s.RepeatSpeed)
+            .IsRepeatSpeed()
+            .WithName($"{prefix}.RepeatSpeed");
+
+        validator.RuleFor(s => s.RepeatDelay)
+            .IsRepeatDelay()
+            .WithName($"{prefix}.RepeatDelay");
+
+        return validator;
     }
 }

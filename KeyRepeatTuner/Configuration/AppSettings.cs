@@ -2,7 +2,7 @@
 
 namespace KeyRepeatTuner.Configuration;
 
-public class AppSettings
+internal class AppSettings
 {
     public required List<ProcessName> ProcessNames { get; set; }
 

@@ -1,7 +1,7 @@
 ﻿namespace KeyRepeatTuner.Configuration;
 
-public class AppSettingsDto
+internal class AppSettingsDto
 {
-    public required List<string>? ProcessNames { get; set; }
-    public required KeyRepeatSettings? KeyRepeat { get; set; }
+    public required List<string> ProcessNames { get; init; }
+    public required KeyRepeatSettings KeyRepeat { get; init; }
 }

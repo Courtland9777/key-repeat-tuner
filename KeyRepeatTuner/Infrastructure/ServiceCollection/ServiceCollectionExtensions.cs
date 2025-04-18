@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.Mapping;
 using KeyRepeatTuner.Configuration.Validation;
-using KeyRepeatTuner.Configuration.ValueObjects;
 using KeyRepeatTuner.Core.Interfaces;
 using KeyRepeatTuner.Core.Services;
 using KeyRepeatTuner.Monitoring.Interfaces;
@@ -33,12 +33,7 @@ public static class ServiceCollectionExtensions
                 dtoMonitor,
                 dto =>
                 {
-                    var mapped = new AppSettings
-                    {
-                        ProcessNames = dto.ProcessNames?.Select(name => new ProcessName(name)).ToList()
-                                       ?? throw new InvalidOperationException("ProcessNames must be set"),
-                        KeyRepeat = dto.KeyRepeat ?? throw new InvalidOperationException("KeyRepeat settings missing")
-                    };
+                    var mapped = AppSettingsMapper.ToDomain(dto);
 
                     var result = validator.Validate(mapped);
                     if (!result.IsValid)

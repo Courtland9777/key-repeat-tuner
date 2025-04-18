@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace KeyRepeatTuner.Monitoring.Services;
 
-public class StartupWatcherTrigger : IStartupWatcherTrigger
+internal class StartupWatcherTrigger : IStartupWatcherTrigger
 {
     private readonly IProcessEventWatcher _eventWatcher;
     private readonly IOptionsMonitor<AppSettings> _optionsMonitor;

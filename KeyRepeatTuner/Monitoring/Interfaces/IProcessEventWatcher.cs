@@ -2,7 +2,7 @@
 
 namespace KeyRepeatTuner.Monitoring.Interfaces;
 
-public interface IProcessEventWatcher : IDisposable
+internal interface IProcessEventWatcher : IDisposable
 {
     void Start();
     void Stop();

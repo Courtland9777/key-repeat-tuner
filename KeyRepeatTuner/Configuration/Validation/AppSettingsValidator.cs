@@ -2,7 +2,7 @@
 
 namespace KeyRepeatTuner.Configuration.Validation;
 
-public class AppSettingsValidator : AbstractValidator<AppSettings>
+internal class AppSettingsValidator : AbstractValidator<AppSettings>
 {
     public AppSettingsValidator()
     {

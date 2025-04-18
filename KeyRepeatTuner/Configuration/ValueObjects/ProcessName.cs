@@ -2,7 +2,7 @@
 
 namespace KeyRepeatTuner.Configuration.ValueObjects;
 
-public sealed partial class ProcessName
+internal sealed partial class ProcessName
 {
     private static readonly Regex ValidPatternRegex = ValidPattern();
 

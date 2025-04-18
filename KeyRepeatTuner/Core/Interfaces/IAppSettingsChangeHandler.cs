@@ -2,7 +2,7 @@
 
 namespace KeyRepeatTuner.Core.Interfaces;
 
-public interface IAppSettingsChangeHandler
+internal interface IAppSettingsChangeHandler
 {
     void OnSettingsChanged(AppSettings newSettings);
 }

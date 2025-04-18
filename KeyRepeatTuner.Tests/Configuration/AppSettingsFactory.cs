@@ -3,7 +3,7 @@ using KeyRepeatTuner.Configuration.ValueObjects;
 
 namespace KeyRepeatTuner.Tests.Configuration;
 
-public static class AppSettingsFactory
+internal static class AppSettingsFactory
 {
     public static AppSettings CreateDefault()
     {

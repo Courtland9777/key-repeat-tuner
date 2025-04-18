@@ -7,7 +7,7 @@ using KeyRepeatTuner.SystemAdapters.WMI;
 
 namespace KeyRepeatTuner.Monitoring.Services;
 
-public sealed class ProcessEventWatcher : IProcessEventWatcher
+internal sealed class ProcessEventWatcher : IProcessEventWatcher
 {
     private readonly Func<EventArrivedEventArgs, IEventArrivedEventArgs> _adapterFactory;
     private readonly ILogger<ProcessEventWatcher> _logger;

@@ -3,7 +3,7 @@ using KeyRepeatTuner.Monitoring.Interfaces;
 
 namespace KeyRepeatTuner.Monitoring.Services;
 
-public sealed class WatcherHostedService : IHostedService
+internal sealed class WatcherHostedService : IHostedService
 {
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<WatcherHostedService> _logger;
