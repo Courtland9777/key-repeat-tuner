@@ -1,10 +1,13 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace KeyRepeatTuner.Configuration.ValueObjects;
 
 internal readonly partial record struct ProcessName
 {
     private static readonly Regex ValidPatternRegex = ValidPattern();
+
+    private static readonly ConcurrentDictionary<string, string> ValidatedNames = new();
 
     public ProcessName(string name)
     {
@@ -33,9 +36,12 @@ internal readonly partial record struct ProcessName
 
         var nameOnly = Path.GetFileNameWithoutExtension(processName.Trim());
 
-        if (!ValidPatternRegex.IsMatch(nameOnly))
-            throw new ArgumentException($"Invalid process name format: '{processName}'", nameof(processName));
+        return ValidatedNames.GetOrAdd(nameOnly, static key =>
+        {
+            if (!ValidPatternRegex.IsMatch(key))
+                throw new ArgumentException($"Invalid process name format: '{key}'", nameof(processName));
 
-        return nameOnly;
+            return key;
+        });
     }
 }
