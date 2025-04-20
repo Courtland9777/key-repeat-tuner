@@ -1,8 +1,14 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Options;
 
 namespace KeyRepeatTuner.Configuration;
 
-public sealed class TransformingOptionsMonitor<TIn, TOut> : IOptionsMonitor<TOut>
+public sealed class TransformingOptionsMonitor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes
+        .PublicParameterlessConstructor)]
+    TIn,
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes
+        .PublicParameterlessConstructor)]
+    TOut> : IOptionsMonitor<TOut>
     where TOut : notnull
 {
     private readonly IOptionsMonitor<TIn> _inner;

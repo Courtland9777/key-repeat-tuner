@@ -2,7 +2,7 @@
 
 namespace KeyRepeatTuner.Configuration.ValueObjects;
 
-internal readonly partial record struct ProcessName
+public readonly partial record struct ProcessName
 {
     private static readonly Regex ValidPatternRegex = ValidPattern();
 

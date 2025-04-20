@@ -12,6 +12,7 @@ using KeyRepeatTuner.SystemAdapters.Processes;
 using KeyRepeatTuner.SystemAdapters.User;
 using KeyRepeatTuner.SystemAdapters.WMI;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace KeyRepeatTuner.Infrastructure.ServiceCollection;
 
@@ -19,10 +20,12 @@ public static class ServiceCollectionExtensions
 {
     public static HostApplicationBuilder AddValidatedAppSettings(this HostApplicationBuilder builder)
     {
-        builder.Services
-            .AddOptions<AppSettingsDto>()
-            .Bind(builder.Configuration.GetSection("AppSettings"))
-            .ValidateOnStart();
+        //builder.Services
+        //    .AddOptions<AppSettingsDto>()
+        //    .Bind(builder.Configuration.GetSection("AppSettings"))
+        //    .ValidateOnStart();
+        builder.Services.BindOptions<AppSettingsDto>()
+            .Configure((options, config) => AppSettingsDto.Bind(config, options));
 
         builder.Services.AddSingleton<IOptionsMonitor<AppSettings>>(sp =>
         {
