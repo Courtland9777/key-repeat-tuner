@@ -32,29 +32,26 @@ public class AppSettingsValidatorTests
         Assert.True(result.IsValid, "Expected configuration to be valid.");
     }
 
-    [Fact]
-    public void InvalidProcessName_ShouldThrowDuringConstruction()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Constructor_ShouldThrow_WhenInputIsNullOrWhitespace(string? input)
     {
-        // Arrange
-        var settings = new AppSettings
-        {
-            ProcessNames = [new ProcessName("   ")],
-            KeyRepeat = new KeyRepeatSettings
-            {
-                Default = new KeyRepeatState { RepeatSpeed = 20, RepeatDelay = 500 },
-                FastMode = new KeyRepeatState { RepeatSpeed = 30, RepeatDelay = 300 }
-            }
-        };
-
-        var validator = new AppSettingsValidator();
-
-        // Act
-        var result = validator.Validate(settings);
-
-        // Assert
-        Assert.Throws<ArgumentException>(() => new ProcessName("   "));
+        Assert.Throws<ArgumentException>(() => _ = new ProcessName(input!));
     }
 
+    [Theory]
+    [InlineData("cmd", "cmd")]
+    [InlineData("notepad.exe", "notepad")]
+    [InlineData("  starcraft.exe  ", "starcraft")]
+    public void Constructor_ShouldNormalizeValidInput(string input, string expected)
+    {
+        var name = new ProcessName(input);
+
+        Assert.Equal(expected, name.Value);
+        Assert.Equal($"{expected}.exe", name.WithExe());
+    }
 
     [Fact]
     public void ChangingAppSettings_ShouldTriggerValidation()
