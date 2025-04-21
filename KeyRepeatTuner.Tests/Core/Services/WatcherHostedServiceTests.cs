@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Services;
+namespace KeyRepeatTuner.Tests.Core.Services;
 
 public class WatcherHostedServiceTests
 {

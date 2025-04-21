@@ -2,7 +2,7 @@
 using KeyRepeatTuner.Configuration.Mapping;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Configuration;
+namespace KeyRepeatTuner.Tests.Configuration.Mapping;
 
 public class AppSettingsMapperTests
 {

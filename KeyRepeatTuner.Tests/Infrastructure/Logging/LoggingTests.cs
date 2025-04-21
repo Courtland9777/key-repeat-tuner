@@ -5,7 +5,7 @@ using Serilog.Events;
 using Serilog.Sinks.InMemory;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Logging;
+namespace KeyRepeatTuner.Tests.Infrastructure.Logging;
 
 public class LoggingTests
 {

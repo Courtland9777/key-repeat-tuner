@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Services;
+namespace KeyRepeatTuner.Tests.Core.Services;
 
 public class KeyRepeatApplierTest
 {

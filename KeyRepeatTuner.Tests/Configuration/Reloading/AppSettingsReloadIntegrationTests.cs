@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Services;
+namespace KeyRepeatTuner.Tests.Configuration.Reloading;
 
 public class AppSettingsReloadIntegrationTests
 {
@@ -65,11 +65,11 @@ public class AppSettingsReloadIntegrationTests
         dtoMonitor.TriggerChange(updatedDto);
 
         // Assert
-        mockHandler.Verify(h => h.OnSettingsChanged(It.Is<AppSettings>(
-            s => s.ProcessNames.Count == 1 &&
-                 s.ProcessNames[0].Value == "starcraft" &&
-                 s.KeyRepeat.Default.RepeatSpeed == 10 &&
-                 s.KeyRepeat.FastMode.RepeatDelay == 250)), Times.Once);
+        mockHandler.Verify(h => h.OnSettingsChanged(It.Is<AppSettings>(s => s.ProcessNames.Count == 1 &&
+                                                                            s.ProcessNames[0].Value == "starcraft" &&
+                                                                            s.KeyRepeat.Default.RepeatSpeed == 10 &&
+                                                                            s.KeyRepeat.FastMode.RepeatDelay == 250)),
+            Times.Once);
     }
 
     [Fact]

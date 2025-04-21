@@ -6,7 +6,7 @@ using KeyRepeatTuner.Tests.TestUtilities.Stubs;
 using Moq;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Services;
+namespace KeyRepeatTuner.Tests.Configuration.Reloading;
 
 public class AppSettingsHotReloadTests
 {

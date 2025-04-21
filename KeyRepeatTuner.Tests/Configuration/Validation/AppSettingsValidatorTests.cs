@@ -4,7 +4,7 @@ using KeyRepeatTuner.Configuration.ValueObjects;
 using KeyRepeatTuner.Tests.TestUtilities.Stubs;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Configuration;
+namespace KeyRepeatTuner.Tests.Configuration.Validation;
 
 public class AppSettingsValidatorTests
 {

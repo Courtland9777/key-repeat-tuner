@@ -2,7 +2,7 @@
 using KeyRepeatTuner.Core.Services;
 using Xunit;
 
-namespace KeyRepeatTuner.Tests.Services;
+namespace KeyRepeatTuner.Tests.Core.Services;
 
 public class KeyRepeatModeResolverTests
 {
