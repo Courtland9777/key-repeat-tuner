@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace KeyRepeatTuner.SystemTests.SystemLevel;
 
+[Collection("SystemTests")]
 public class SystemLevelTests : IDisposable
 {
     private readonly string _logFile =

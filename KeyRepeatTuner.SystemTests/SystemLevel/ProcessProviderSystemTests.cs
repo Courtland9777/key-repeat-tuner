@@ -5,6 +5,7 @@ using Xunit;
 
 namespace KeyRepeatTuner.SystemTests.SystemLevel;
 
+[Collection("SystemTests")]
 public class ProcessProviderSystemTests : IDisposable
 {
     private Process? _notepad;
