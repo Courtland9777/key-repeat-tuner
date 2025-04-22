@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
     {
         builder.Services
             .AddOptions<AppSettingsDto>()
-            .Bind(builder.Configuration.GetSection("AppSettings"))
+            .BindConfiguration("AppSettings")
             .ValidateOnStart();
 
         builder.Services.AddSingleton<IOptionsMonitor<AppSettings>>(sp =>

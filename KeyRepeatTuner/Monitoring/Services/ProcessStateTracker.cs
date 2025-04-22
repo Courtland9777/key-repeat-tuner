@@ -19,11 +19,6 @@ public sealed class ProcessStateTracker : IProcessEventRouter
 
     public bool IsRunning => _activeProcesses.Count > 0;
 
-    public void OnStartup()
-    {
-        _logger.LogInformation("ProcessStateTracker initialized. No processes tracked yet.");
-    }
-
     public void OnProcessStarted(int processId, string processName)
     {
         if (!_activeProcesses.Add(processId))

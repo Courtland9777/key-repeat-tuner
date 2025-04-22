@@ -76,15 +76,6 @@ public class ProcessStateTrackerTests
     }
 
     [Fact]
-    public void OnStartup_ShouldDoNothing()
-    {
-        // Just call and verify no exceptions or side effects
-        _tracker.OnStartup();
-
-        _mockKeyRepeatSettingsService.VerifyNoOtherCalls();
-    }
-
-    [Fact]
     public void RedundantStopCalls_ShouldNotThrowOrChangeState()
     {
         _tracker.OnProcessStarted(1, "a.exe");

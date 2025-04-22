@@ -15,10 +15,13 @@ public class WatcherHostedServiceTests
 {
     private readonly Mock<IKeyRepeatSettingsService> _mockKeyRepeatSettingsService = new();
     private readonly Mock<IHostApplicationLifetime> _mockLifetime = new();
+    private readonly Mock<ILogger<StartupWatcherTrigger>> _mockLog = new();
     private readonly Mock<ILogger<WatcherHostedService>> _mockLogger = new();
     private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptionsMonitor = new();
     private readonly Mock<IProcessEventRouter> _mockRouter = new();
+    private readonly Mock<IAppSettingsChangeHandler> _mockSettingsChangeHandler = new();
     private readonly Mock<IProcessEventWatcher> _mockWatcher = new();
+
 
     public WatcherHostedServiceTests()
     {
@@ -41,7 +44,9 @@ public class WatcherHostedServiceTests
             _mockOptionsMonitor.Object,
             _mockWatcher.Object,
             _mockRouter.Object,
-            _mockKeyRepeatSettingsService.Object
+            _mockKeyRepeatSettingsService.Object,
+            _mockSettingsChangeHandler.Object,
+            _mockLog.Object
         );
 
         return new WatcherHostedService(
@@ -63,7 +68,6 @@ public class WatcherHostedServiceTests
         // Assert
         Assert.Null(result);
         _mockWatcher.Verify(w => w.OnSettingsChanged(It.IsAny<AppSettings>()), Times.Once);
-        _mockRouter.Verify(r => r.OnStartup(), Times.Once);
     }
 
     [Fact]
