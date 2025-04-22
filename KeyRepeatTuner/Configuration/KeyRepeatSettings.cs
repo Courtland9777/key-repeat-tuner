@@ -2,7 +2,7 @@
 
 public class KeyRepeatSettings
 {
-    public required KeyRepeatState Default { get; init; }
+    public required KeyRepeatState Default { get; set; }
 
-    public required KeyRepeatState FastMode { get; init; }
+    public required KeyRepeatState FastMode { get; set; }
 }

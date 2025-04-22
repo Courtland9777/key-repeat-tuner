@@ -1,4 +1,5 @@
 ﻿using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.Dto;
 using KeyRepeatTuner.Configuration.Validation;
 using KeyRepeatTuner.Configuration.ValueObjects;
 using KeyRepeatTuner.Core.Interfaces;

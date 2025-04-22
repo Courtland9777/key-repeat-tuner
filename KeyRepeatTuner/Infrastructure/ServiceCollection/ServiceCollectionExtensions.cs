@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using KeyRepeatTuner.Configuration;
+using KeyRepeatTuner.Configuration.Dto;
 using KeyRepeatTuner.Configuration.Mapping;
 using KeyRepeatTuner.Configuration.Validation;
 using KeyRepeatTuner.Core.Interfaces;

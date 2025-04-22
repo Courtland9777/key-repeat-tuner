@@ -1,5 +1,6 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.ValueObjects;
+using KeyRepeatTuner.Core.Interfaces;
 using KeyRepeatTuner.Monitoring.Interfaces;
 using KeyRepeatTuner.Monitoring.Services;
 using KeyRepeatTuner.Tests.TestUtilities.Stubs;
@@ -37,8 +38,10 @@ public class AppSettingsHotReloadTests
         var mockOptionsMonitor = new TestOptionsMonitor<AppSettings>(initial);
         var mockWatcher = new Mock<IProcessEventWatcher>();
         var mockRouter = new Mock<IProcessEventRouter>();
+        var mockKeyRepeatSettingsService = new Mock<IKeyRepeatSettingsService>();
 
-        var trigger = new StartupWatcherTrigger(mockOptionsMonitor, mockWatcher.Object, mockRouter.Object);
+        var trigger = new StartupWatcherTrigger(mockOptionsMonitor, mockWatcher.Object, mockRouter.Object,
+            mockKeyRepeatSettingsService.Object);
 
         // Act
         trigger.Trigger(); // sets up OnChange listener and triggers once

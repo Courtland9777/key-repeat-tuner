@@ -17,7 +17,7 @@ public sealed class ProcessStateTracker : IProcessEventRouter
         _keyRepeatSettingsService = keyRepeatSettingsService;
     }
 
-    private bool IsRunning => _activeProcesses.Count > 0;
+    public bool IsRunning => _activeProcesses.Count > 0;
 
     public void OnStartup()
     {

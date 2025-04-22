@@ -1,4 +1,5 @@
-﻿using KeyRepeatTuner.Configuration.ValueObjects;
+﻿using KeyRepeatTuner.Configuration.Dto;
+using KeyRepeatTuner.Configuration.ValueObjects;
 
 namespace KeyRepeatTuner.Configuration.Mapping;
 

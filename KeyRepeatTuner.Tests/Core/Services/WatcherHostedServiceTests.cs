@@ -1,5 +1,6 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.ValueObjects;
+using KeyRepeatTuner.Core.Interfaces;
 using KeyRepeatTuner.Monitoring.Interfaces;
 using KeyRepeatTuner.Monitoring.Services;
 using Microsoft.Extensions.Hosting;
@@ -12,6 +13,7 @@ namespace KeyRepeatTuner.Tests.Core.Services;
 
 public class WatcherHostedServiceTests
 {
+    private readonly Mock<IKeyRepeatSettingsService> _mockKeyRepeatSettingsService = new();
     private readonly Mock<IHostApplicationLifetime> _mockLifetime = new();
     private readonly Mock<ILogger<WatcherHostedService>> _mockLogger = new();
     private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptionsMonitor = new();
@@ -38,7 +40,8 @@ public class WatcherHostedServiceTests
         var trigger = new StartupWatcherTrigger(
             _mockOptionsMonitor.Object,
             _mockWatcher.Object,
-            _mockRouter.Object
+            _mockRouter.Object,
+            _mockKeyRepeatSettingsService.Object
         );
 
         return new WatcherHostedService(
