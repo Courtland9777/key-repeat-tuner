@@ -3,7 +3,9 @@ using System.Security.Principal;
 using KeyRepeatTuner.SystemAdapters.Interfaces;
 using KeyRepeatTuner.SystemAdapters.Keyboard;
 using KeyRepeatTuner.SystemTests.TestUtilities.Helpers;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,7 +25,10 @@ public class SystemLevelTests : IDisposable
     public SystemLevelTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _registryReader = new KeyboardRegistryReader();
+
+        var mockLogger = new Mock<ILogger<KeyboardRegistryReader>>();
+        _registryReader = new KeyboardRegistryReader(mockLogger.Object);
+
 
         Assert.True(IsAdministrator(), "Tests must run with administrator privileges.");
 
