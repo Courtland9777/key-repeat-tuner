@@ -12,9 +12,9 @@ This tool automates what you'd otherwise do manually in **Keyboard Properties**:
 - Adjust the **Repeat rate** and **Repeat delay** sliders before and after gaming sessions.
 
 Key Repeat Tuner:
-- ?? Applies "FastMode" settings when your game is running  
-- ?? Reverts to default when the game closes  
-- ?? Works silently in the background
+- Applies "FastMode" settings when your game is running  
+- Reverts to default when the game closes  
+- Works silently in the background
 
 ---
 
