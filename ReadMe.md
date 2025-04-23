@@ -1,11 +1,11 @@
-# Key Repeat Tuner ???
+# Key Repeat Tuner
 
 **Tweak your Windows keyboard repeat speed and delay automatically when your favorite games launch.**  
 Key Repeat Tuner is a lightweight background service that watches for specified processes (like `starcraft.exe`) and dynamically adjusts your system's keyboard responsiveness.
 
 ![Keyboard Properties Screenshot](KeyboardProperties.png)
 
-## ?? Why It Matters
+## Why It Matters
 
 For real-time strategy gamers and competitive players, keyboard responsiveness can make or break a moment.  
 This tool automates what you'd otherwise do manually in **Keyboard Properties**:  
@@ -18,18 +18,17 @@ Key Repeat Tuner:
 
 ---
 
-## ? Features
+## Features
 
-- ?? Automatically detects running processes
-- ??? Configurable key repeat rate (0–31) and delay (250–1000 ms)
-- ?? Uses native Windows API and registry operations
-- ?? Auto-checks for admin rights at startup
-- ?? Delivered as a Windows service with WiX installer
-- ?? Easy config override via `appsettings.json`
+- Automatically detects running processes
+- Configurable key repeat rate (0ï¿½31) and delay (250ï¿½1000 ms)
+- Uses native Windows API and registry operations
+- Delivered as a Windows service with WiX installer
+- Easy config override via `appsettings.json`
 
 ---
 
-## ?? Installation
+## Installation
 
 1. **Download the Installer**
 
@@ -70,7 +69,7 @@ Example:
 
 ---
 
-## ?? How It Works
+## How It Works
 
 - The app uses WMI to track process start/stop events
 - When a watched process starts, `FastMode` settings are applied
@@ -84,7 +83,7 @@ No reboots. No manual toggles. Just smooth transitions.
 
 ---
 
-## ?? Testing
+## Testing
 
 Included system-level tests validate:
 - Registry settings applied correctly
@@ -95,7 +94,7 @@ Run `KeyRepeatTuner.SystemTests` for full test coverage.
 
 ---
 
-## ?? Tech Stack
+## Tech Stack
 
 | Tech                  | Purpose                                  |
 |-----------------------|------------------------------------------|
@@ -107,30 +106,30 @@ Run `KeyRepeatTuner.SystemTests` for full test coverage.
 
 ---
 
-## ? FAQ
+## FAQ
 
 - **Does it support multiple processes?**  
-  Yes — if *any* watched process is active, FastMode remains on.
+  Yes ï¿½ if *any* watched process is active, FastMode remains on.
 
 - **Does it require .NET to be installed?**  
-  No — the runtime is bundled (self-contained .NET 8 build).
+  No ï¿½ the runtime is bundled (self-contained .NET 8 build).
 
 - **Is it safe?**  
   Absolutely. Admin privileges are used only to update registry values under your user profile.
 
 ---
 
-## ?? Made for Gamers
+## Made for Gamers
 
-Inspired by the hassle of manual tweaks before every ladder game.  
-Whether you’re climbing to GM or just laddering for fun, this utility makes sure your keyboard is tuned for peak responsiveness every time.
+Inspired by the hassle of manual tweaks before ladder matches and Pig's Bronze to GM videos. 
+Whether youï¿½re climbing to GM or just laddering for fun, this utility makes sure your keyboard is tuned for peak responsiveness every time.
 
 ---
 
-## ?? Project
+## Project
 
 - GitHub: [Courtland9777/key-repeat-tuner](https://github.com/Courtland9777/key-repeat-tuner)
 
-## ?? License
+## License
 
 MIT
