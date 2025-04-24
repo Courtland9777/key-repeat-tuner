@@ -21,7 +21,7 @@ Key Repeat Tuner:
 ## Features
 
 - Automatically detects running processes
-- Configurable key repeat rate (0�31) and delay (250�1000 ms)
+- Configurable key repeat rate (0-31) and delay (250-1000 ms)
 - Uses native Windows API and registry operations
 - Delivered as a Windows service with WiX installer
 - Easy config override via `appsettings.json`
@@ -43,10 +43,12 @@ The app installs to `C:\Program Files\Key Repeat Tuner` and:
 
 3. **Configure Watched Games**
 
-Update your settings in:
+Settings are located in:
 ```plaintext
 %APPDATA%\KeyRepeatTuner\appsettings.json
 ```
+
+There is also a shortcut in the Start Menu.
 
 Example:
 ```json
@@ -83,17 +85,6 @@ No reboots. No manual toggles. Just smooth transitions.
 
 ---
 
-## Testing
-
-Included system-level tests validate:
-- Registry settings applied correctly
-- Keyboard behavior during process changes
-- Logs are written on change events
-
-Run `KeyRepeatTuner.SystemTests` for full test coverage.
-
----
-
 ## Tech Stack
 
 | Tech                  | Purpose                                  |
@@ -109,20 +100,17 @@ Run `KeyRepeatTuner.SystemTests` for full test coverage.
 ## FAQ
 
 - **Does it support multiple processes?**  
-  Yes � if *any* watched process is active, FastMode remains on.
+  Yes, if *any* watched process is active, FastMode remains on.
 
 - **Does it require .NET to be installed?**  
-  No � the runtime is bundled (self-contained .NET 8 build).
-
-- **Is it safe?**  
-  Absolutely. Admin privileges are used only to update registry values under your user profile.
+  No, the runtime is bundled (self-contained .NET 8 build).
 
 ---
 
 ## Made for Gamers
 
-Inspired by the hassle of manual tweaks before ladder matches and Pig's Bronze to GM videos. 
-Whether you�re climbing to GM or just laddering for fun, this utility makes sure your keyboard is tuned for peak responsiveness every time.
+Inspired by the hassle of manual tweaks before gaming and Pig's Bronze to GM video series, pigstarcraft.com. 
+Whether you're climbing to GM or just laddering for fun, this utility makes sure your keyboard is tuned for peak responsiveness every time.
 
 ---
 
