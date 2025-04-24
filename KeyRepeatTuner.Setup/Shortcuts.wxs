@@ -29,7 +29,7 @@
                   Name="Uninstall Key Repeat Tuner"
                   Target="[SystemFolder]msiexec.exe"
                   Arguments="/x [ProductCode]"
-                  Icon="AppIcon.ico"
+                  Icon="UninstallIcon.ico"
                   Advertise="no" />
         <RemoveFile Id="RemoveUninstallShortcut"
                     Name="Uninstall Key Repeat Tuner.lnk"
@@ -48,7 +48,7 @@
         <Shortcut Id="UserSettingsShortcut"
                   Name="Edit User Settings"
                   Target="[INSTALLFOLDER]EditSettings.cmd"
-                  Icon="AppIcon.ico"
+                  Icon="EditConfigurationIcon.ico"
                   Advertise="no" />
         <RemoveFile Id="RemoveUserSettingsShortcut"
                     Name="Edit User Settings.lnk"
