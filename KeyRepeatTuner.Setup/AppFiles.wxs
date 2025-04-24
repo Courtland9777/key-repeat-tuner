@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="KeyRepeatTunerAppComponents" Directory="INSTALLFOLDER">
+
+      <Component Guid="*">
+        <File Source="..\KeyRepeatTuner\bin\Release\net8.0-windows\win-x64\publish\win-x64\KeyRepeatTuner.exe" />
+      </Component>
+
+      <Component Guid="*">
+        <File Source="..\KeyRepeatTuner\bin\Release\net8.0-windows\win-x64\publish\win-x64\appsettings.json" />
+      </Component>
+      <File Source="$(ProjectDir)EditSettings.cmd" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

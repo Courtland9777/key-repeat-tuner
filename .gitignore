@@ -1,7 +1,8 @@
-
 # Build artifacts
 bin/
 obj/
+/bin/
+/obj/
 
 # User-specific files
 *.user
@@ -142,3 +143,6 @@ dist/
 docker-compose.override.yml
 **/Dockerfile
 **/.dockerignore
+
+/.gptignore
+Properties/launchSettings.json

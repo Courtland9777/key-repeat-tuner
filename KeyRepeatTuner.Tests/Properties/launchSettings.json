@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "KeyRepeatTuner.Tests": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}

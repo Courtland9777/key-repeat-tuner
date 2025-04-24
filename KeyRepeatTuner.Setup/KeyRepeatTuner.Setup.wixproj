@@ -1,0 +1,17 @@
+﻿<Project Sdk="WixToolset.Sdk/6.0.0">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <TargetPlatform>win64</TargetPlatform>
+    <WixOutputPath>bin\$(Configuration)\$(Platform)\</WixOutputPath>
+  </PropertyGroup>
+  <!-- Ensure the app is published before the installer builds -->
+  <Target Name="PublishApp" BeforeTargets="Build">
+    <Exec Command="dotnet publish ..\KeyRepeatTuner\KeyRepeatTuner.csproj -c Release -r win-x64 -p:PublishProfile=FolderProfile" />
+  </Target>
+  <ItemGroup>
+    <None Include="EditSettings.cmd" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KeyRepeatTuner\KeyRepeatTuner.csproj" />
+  </ItemGroup>
+</Project>
