@@ -1,7 +1,7 @@
 ﻿using KeyRepeatTuner.Configuration;
 using KeyRepeatTuner.Configuration.ValueObjects;
 
-namespace KeyRepeatTuner.Tests.Configuration;
+namespace KeyRepeatTuner.Tests.TestUtilities.Fakes;
 
 internal static class AppSettingsFactory
 {

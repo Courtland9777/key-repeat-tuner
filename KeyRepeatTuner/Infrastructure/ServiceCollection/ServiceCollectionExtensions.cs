@@ -51,9 +51,10 @@ public static class ServiceCollectionExtensions
 
     public static HostApplicationBuilder AddApplicationServices(this HostApplicationBuilder builder)
     {
-        builder.Services.AddSingleton<IValidator<AppSettings>, AppSettingsValidator>();
+        builder.Services
+            .AddSingleton<IValidator<AppSettings>, AppSettingsValidator>()
+            .AddInfrastructureServices();
 
-        builder.Services.AddInfrastructureServices();
         return builder;
     }
 
