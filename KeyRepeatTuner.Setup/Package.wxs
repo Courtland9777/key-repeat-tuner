@@ -1,6 +1,6 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package Name="KeyRepeatTuner"
+  <Package Name="Key Repeat Tuner"
            Manufacturer="Courtland9777"
            Version="1.1.0.0"
            UpgradeCode="9ed8fc20-eb1c-41ee-b7fc-a1abee87454a"
@@ -10,7 +10,7 @@
     
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 
-    <Feature Id="MainFeature" Title="KeyRepeatTuner" Level="1">
+    <Feature Id="MainFeature" Title="Key Repeat Tuner" Level="1">
       <ComponentGroupRef Id="KeyRepeatTunerAppComponents" />
       <ComponentGroupRef Id="AutoStartRegistry" />
       <ComponentGroupRef Id="KeyRepeatTunerShortcuts" />
