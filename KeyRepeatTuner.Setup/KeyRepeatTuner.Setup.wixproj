@@ -12,6 +12,9 @@
     <None Include="EditSettings.cmd" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\KeyRepeatTuner\KeyRepeatTuner.csproj" />
   </ItemGroup>
 </Project>
