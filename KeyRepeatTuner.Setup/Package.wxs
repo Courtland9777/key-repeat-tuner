@@ -1,4 +1,5 @@
-﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="KeyRepeatTuner"
            Manufacturer="Courtland9777"
            Version="1.1.0.0"
@@ -9,36 +10,13 @@
     
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 
-    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <StandardDirectory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="KeyRepeatTuner">
-        </Directory>
-      </StandardDirectory>
-    </Directory>
-
-
     <Feature Id="MainFeature" Title="KeyRepeatTuner" Level="1">
       <ComponentGroupRef Id="KeyRepeatTunerAppComponents" />
       <ComponentGroupRef Id="AutoStartRegistry" />
       <ComponentGroupRef Id="KeyRepeatTunerShortcuts" />
     </Feature>
 
-    <UI>
-      <DialogRef Id="WelcomeDlg" />
-      <DialogRef Id="InstallDirDlg" />
-      <DialogRef Id="VerifyReadyDlg" />
-      <DialogRef Id="ProgressDlg" />
-      <DialogRef Id="ExitDlg" />
-
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" />
-      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" />
-      <Publish Dialog="VerifyReadyDlg" Control="Install" Event="EndDialog" Value="Return" Order="999" />
-    </UI>
-
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
 
     <Icon Id="AppIcon.ico" SourceFile="..\KeyRepeatTuner\Assets\AppIcon.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
@@ -46,9 +24,4 @@
     <Icon Id="UninstallIcon.ico" SourceFile="..\KeyRepeatTuner\Assets\UninstallIcon.ico" />
   </Package>
 
-  <Fragment>
-    <StandardDirectory Id="ProgramFilesFolder">
-      <Directory Id="INSTALLFOLDER" Name="KeyRepeatTuner" />
-    </StandardDirectory>
-  </Fragment>
 </Wix>
