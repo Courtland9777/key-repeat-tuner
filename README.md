@@ -4,14 +4,13 @@ Key Repeat Tuner is a personal Windows utility that changes keyboard repeat sett
 
 It was built as a small automation/internal-tools project: a background worker observes Windows process state, applies configuration-driven keyboard settings through Windows APIs and registry values, and is packaged with a WiX MSI installer.
 
-![Keyboard Properties Screenshot](KeyboardProperties.png)
-
 ## Project Status
 
 - Personal/portfolio Windows utility.
 - Windows-only. The application targets `net8.0-windows`, uses Windows Management Instrumentation, and reads/writes Windows keyboard registry settings.
 - Not claimed as enterprise-deployed or production corporate software.
 - Demonstrates .NET/Windows automation, configuration-driven behavior, unit and system testing, and installer packaging.
+- Current runtime expects administrator privileges so it can apply Windows keyboard repeat settings.
 
 ## What It Does
 
@@ -30,14 +29,17 @@ The behavior matches the Windows **Keyboard Properties** repeat delay and repeat
 The latest published release, `v1.1.0`, includes `KeyRepeatTuner.Setup.msi`.
 
 1. Download the MSI from the [Releases page](https://github.com/Courtland9777/key-repeat-tuner/releases).
-2. Run the installer on Windows.
-3. Edit the per-user configuration file:
+2. Run the installer on Windows. The MSI installs per-machine under `C:\Program Files\Key Repeat Tuner`, so Windows may request elevation during installation.
+3. Run Key Repeat Tuner with administrator privileges.
+4. Edit the per-user configuration file:
 
 ```text
 %APPDATA%\KeyRepeatTuner\appsettings.json
 ```
 
-The installer is configured to install under `C:\Program Files\Key Repeat Tuner`, add startup behavior, and provide Start Menu shortcuts for editing settings and uninstalling.
+On first run, the application creates the per-user configuration from the installed `appsettings.json` template if the AppData file does not already exist.
+
+The installer is configured to add current-user startup behavior and provide Start Menu shortcuts for editing settings and uninstalling.
 
 Example configuration:
 
@@ -113,6 +115,13 @@ The WiX project publishes the application before packaging and outputs the MSI u
 | Logging | Serilog sinks for console, Event Log, and file logging |
 | Tests | xUnit and Moq unit tests, plus administrator-only Windows system tests |
 | Packaging | WiX Toolset SDK project for MSI packaging |
+
+## Limits and Assumptions
+
+- This is a focused personal utility, not a general Windows administration tool.
+- The process-name matching is configuration-driven and expects executable names without `.exe`.
+- The repository includes administrator-only system tests; run them only on a Windows environment where changing keyboard repeat settings is acceptable.
+- The published installer is intended for `win-x64`.
 
 ## Repository
 
