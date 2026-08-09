@@ -1,5 +1,7 @@
 # Key Repeat Tuner
 
+[![Windows CI](https://github.com/Courtland9777/key-repeat-tuner/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/Courtland9777/key-repeat-tuner/actions/workflows/windows-ci.yml)
+
 Key Repeat Tuner is a personal Windows utility that changes keyboard repeat settings when configured applications are running, then restores the default settings when they exit.
 
 It was built as a small automation/internal-tools project: a background worker observes Windows process state, applies configuration-driven keyboard settings through Windows APIs and registry values, and is packaged with a WiX MSI installer.
