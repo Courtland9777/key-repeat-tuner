@@ -23,7 +23,7 @@ jobs:
         run: dotnet restore .\KeyRepeatTuner.sln
 
       - name: Build
-        run: dotnet build .\KeyRepeatTuner.sln -c Release -p:Platform=x64 --no-restore
+        run: dotnet build .\KeyRepeatTuner.Tests\KeyRepeatTuner.Tests.csproj -c Release -p:Platform=x64 --no-restore
 
       - name: Run unit tests
         run: dotnet test .\KeyRepeatTuner.Tests\KeyRepeatTuner.Tests.csproj -c Release -p:Platform=x64 --no-build
